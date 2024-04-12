@@ -6,13 +6,13 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#define MAX_EVENTS 10
+#define MAX_EVENTS 128
 #define PORT 54321
 
 int main() {
   // 定义一个epoll_event结构体变量ev，用于在调用epoll_ctl时指定事件类型和与事件关联的文件描述符
   // 定义一个epoll_event类型的数组events，用于在调用epoll_wait时接收已经就绪的事件
-  struct epoll_event ev, events[MAX_EVENTS];
+  struct epoll_event ev, *events;
   // 定义一个整型变量listen_sock，用于存储监听socket的文件描述符
   // 定义一个整型变量conn_sock，用于存储接受的连接的文件描述符
   // 定义一个整型变量nfds，用于存储epoll_wait返回的就绪的文件描述符的数量
@@ -21,6 +21,9 @@ int main() {
 
   // 创建监听socket
   listen_sock = socket(AF_INET, SOCK_STREAM, 0);
+
+  int on = 1;
+  setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
 
   // 绑定到本地端口
   struct sockaddr_in serv_addr;
@@ -49,10 +52,12 @@ int main() {
     exit(EXIT_FAILURE);
   }
 
+  events = (struct epoll_event *)calloc(MAX_EVENTS, sizeof(ev));
   // 无限循环，服务器持续运行
   for (;;) {
     // 等待epoll事件的发生
     nfds = epoll_wait(epollfd, events, MAX_EVENTS, -1);
+    printf("epoll_wait wakeup, nfds: %d\n", nfds);
     // 如果epoll_wait调用失败，打印错误信息并退出
     if (nfds == -1) {
       perror("epoll_wait");
@@ -96,6 +101,8 @@ int main() {
     }
   }
 
+  free(events);
   close(epollfd);
+  close(listen_sock);
   return 0;
 }
