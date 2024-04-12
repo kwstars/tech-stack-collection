@@ -7,24 +7,25 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#define MAX_CLIENTS 30
 #define PORT 54321
+#define MAX_LINE 4096
 
 int main() {
-  int listen_sock, client_sock, max_sock, activity, i, sd;
-  int client_sockets[MAX_CLIENTS];
+  int listen_sock, client_sock, max_sock;
   struct sockaddr_in server_addr;
-  char buffer[1025];
-  fd_set readfds;
-
-  for (i = 0; i < MAX_CLIENTS; i++) {
-    client_sockets[i] = 0;
-  }
+  char buffer[MAX_LINE];
+  // 定义文件描述符集合：readfds
+  // 用于存储需要读取的文件描述符，writefds
+  // 用于存储需要写入的文件描述符，rset 和
+  // wset 用于存储 select 函数的结果
+  fd_set readfds, writefds, rset, wset;
 
   if ((listen_sock = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
     perror("socket failed");
     exit(EXIT_FAILURE);
   }
+  int on = 1;
+  setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
 
   server_addr.sin_family = AF_INET;
   server_addr.sin_addr.s_addr = INADDR_ANY;
@@ -41,52 +42,68 @@ int main() {
     exit(EXIT_FAILURE);
   }
 
+  FD_ZERO(&readfds);
+  FD_SET(listen_sock, &readfds);
+  FD_ZERO(&writefds);
+
+  max_sock = listen_sock;
+
   while (1) {
-    FD_ZERO(&readfds);
-    FD_SET(listen_sock, &readfds);
-    max_sock = listen_sock;
-
-    for (i = 0; i < MAX_CLIENTS; i++) {
-      sd = client_sockets[i];
-      if (sd > 0) {
-        FD_SET(sd, &readfds);
+    rset = readfds;
+    wset = writefds;
+    int num_ready_fds = select(max_sock + 1, &rset, &wset, NULL, NULL);
+    if (num_ready_fds == -1) {
+      printf("select error: %s(errno: %d)\n", strerror(errno), errno);
+      return 0;
+    }
+    if (FD_ISSET(listen_sock, &rset)) {
+      struct sockaddr_in client;
+      socklen_t len = sizeof(client);
+      if ((client_sock =
+               accept(listen_sock, (struct sockaddr *)&client, &len)) == -1) {
+        printf("accept socket error: %s(errno: %d)\n", strerror(errno), errno);
+        return 0;
       }
-      if (sd > max_sock) {
-        max_sock = sd;
-      }
+      FD_SET(client_sock, &readfds);
+      if (client_sock > max_sock)
+        max_sock = client_sock;
+      if (--num_ready_fds == 0)
+        continue;
     }
 
-    activity = select(max_sock + 1, &readfds, NULL, NULL, NULL);
-
-    if ((activity < 0) && (errno != EINTR)) {
-      printf("select error");
-    }
-
-    if (FD_ISSET(listen_sock, &readfds)) {
-      if ((client_sock = accept(listen_sock, NULL, NULL)) < 0) {
-        perror("accept failed");
-        exit(EXIT_FAILURE);
-      }
-
-      for (i = 0; i < MAX_CLIENTS; i++) {
-        if (client_sockets[i] == 0) {
-          client_sockets[i] = client_sock;
-          break;
-        }
-      }
-    }
-
-    for (i = 0; i < MAX_CLIENTS; i++) {
-      sd = client_sockets[i];
-      if (FD_ISSET(sd, &readfds)) {
-        int len;
-        if ((len = read(sd, buffer, 1024)) == 0) {
-          close(sd);
-          client_sockets[i] = 0;
+    int i = 0;
+    for (i = listen_sock + 1; i <= max_sock; i++) {
+      int n = -1;
+      if (FD_ISSET(i, &rset)) {
+        n = recv(i, buffer, MAX_LINE, 0);
+        if (n > 0) {
+          buffer[n] = '\0';
+          printf("recv msg from client (socket %d): %s", i, buffer);
+          FD_SET(i, &writefds);
+        } else if (n == 0) {
+          printf("client (socket %d) closed the connection\n", i);
+          FD_CLR(i, &readfds);  // Clear the socket from the read set
+          FD_CLR(i, &writefds); // Clear the socket from the write set
+          close(i);             // Close the client socket
+          continue;
         } else {
-          buffer[len] = '\0';
-          send(sd, buffer, strlen(buffer), 0);
+          printf("recv error: %s(errno: %d)\n", strerror(errno), errno);
+          continue;
         }
+        if (--num_ready_fds == 0)
+          break;
+      }
+
+      if (FD_ISSET(i, &wset)) {
+        if (n == -1) { // Check if n has been assigned
+          continue;
+        }
+        if (send(i, buffer, n, 0) == -1) {
+          printf("send error: %s(errno: %d)\n", strerror(errno), errno);
+          continue;
+        }
+        FD_CLR(i, &writefds);
+        FD_SET(i, &readfds);
       }
     }
   }
