@@ -1,5 +1,5 @@
-IMAGE_NAME=http_range_requests
-CONTAINER_NAME=http_range_requests-container
+IMAGE_NAME=http-range-requests
+CONTAINER_NAME=http-range-requests-container
 
 build:
 	docker build -t $(IMAGE_NAME) .
