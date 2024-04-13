@@ -44,10 +44,3 @@ first_and_last_bytes:
 # 当 ETag 不匹配时，服务器会返回一个 412 Precondition Failed 响应。这意味着资源已经改变，客户端需要重新请求整个资源。
 if_match_request:
 	curl -i -H "If-Match: \"your-etag-value\"" http://localhost:8080/alphabet.txt
-
-
-if_match_request:
-	curl -i -H "If-Match: \"your-etag-value\"" http://localhost:8080/alphabet.txt
-
-# conditional_range_request:
-# 	curl -i -H "Range: bytes=0-4" -H "If-Range: \"your-etag-or-last-modified-date\"" http://localhost:8080/alphabet.txt
