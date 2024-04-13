@@ -10,6 +10,9 @@ COPY package*.json ./
 # 安装依赖
 RUN npm install
 
+# 安装 tcpdump
+RUN apt-get update && apt-get install -y tcpdump
+
 # 将应用的源代码复制到工作目录
 COPY . .
 
