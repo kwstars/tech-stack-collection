@@ -3,7 +3,7 @@ CONTAINER_NAME=http-range-requests-container
 
 # 定义命令
 build:
-	docker build --target production -t $(IMAGE_NAME) .
+	docker build -t $(IMAGE_NAME) .
 
 run:
 	docker run -d -p 8080:80 --name $(CONTAINER_NAME) $(IMAGE_NAME)
