@@ -6,7 +6,7 @@ build:
 	docker build --target production -t $(IMAGE_NAME) .
 
 run:
-	docker run -d -p 3000:3000 --name $(CONTAINER_NAME) -v $(HOST_PCAP_DIR):$(CONTAINER_PCAP_DIR) --init $(IMAGE_NAME) sh -c "tcpdump -i any -s 0 -w $(CONTAINER_PCAP_DIR)/output.pcap port 3000 & npm start"
+	docker run -d -p 8080:80 --name $(CONTAINER_NAME) $(IMAGE_NAME)
 
 stop:
 	docker stop $(CONTAINER_NAME)
