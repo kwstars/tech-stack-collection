@@ -1,0 +1,45 @@
+# https://helm.sh/docs/chart_template_guide/function_list/#logic-and-flow-control-functions
+# https://helm.sh/docs/chart_template_guide/control_structures/
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-configmap
+data:
+  myvalue: "Hello World"
+  drink: {{ default "tea" .Values.drink }}
+
+  {{- /*.Values.food 是必需的，如果为空，则会抛出错误*/}}
+  food: {{ required "A valid .Values.food entry required!" .Values.food }}
+
+  {{- /*如果 .Values.favorite.drink 的值等于 "coffee"，则设置 coffee 为 "true"*/}}
+  {{- if eq .Values.favorite.drink "coffee" }}
+  coffee: "true"
+  {{- end }}
+
+  {{- /* 如果 .Values.favorite.number1 小于 .Values.favorite.number2，则设置 luckyNumber 为 "true" */ -}}
+  {{- if lt .Values.favorite.number1 .Values.favorite.number2 }}
+  luckyNumber: "true"
+  {{- end }}
+
+  {{- /* 如果 .Values.favorite.drink 为空，则设置 favoriteDrink1 为 "none" */ -}}
+  {{- if empty .Values.favorite.drink }}
+  favoriteDrink1: "none"
+  {{- else }}
+  {{- /* 否则，设置 favoriteDrink2 为 .Values.favorite.drink 的值 */}}
+  favoriteDrink2: {{ .Values.favorite.drink }}
+  {{- end }}
+
+  {{- /* 如果 .Values.favorite.drink 为空，则抛出错误 "No favorite drink provided!" */ -}}
+  {{- if empty .Values.favorite.drink }}
+  {{ fail "No favorite drink provided!" }}
+  {{- end }}
+
+  {{- /* 如果 .Values.favorite.drink2 为空，则设置 favoriteDrink3 为 "coffee" */}}
+  favoriteDrink3: {{ coalesce .Values.favorite.drink2 "coffee" }}
+
+  {{- /*使用 with 修改作用域到 .Values.favorite*/ -}}
+  {{- with .Values.favorite }}
+  drink: {{ .drink | default "tea" | quote }}
+  food: {{ if typeIs "string" .food }}{{ .food | upper | quote }}{{ else }}"defaultFood"{{ end }}
+  release: {{ $.Release.Name }}
+  {{- end }}

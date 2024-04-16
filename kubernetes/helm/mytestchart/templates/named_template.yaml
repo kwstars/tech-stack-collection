@@ -1,0 +1,12 @@
+# https://helm.sh/docs/chart_template_guide/named_templates/
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "mytestchart.fullname" . }}
+  labels:
+    {{- /* 引入名为 "mytestchart.labels" 的命名模板，并将当前上下文（"."）传递给它。然后，使用 "nindent" 函数将结果缩进 4 个空格。*/ -}}
+    {{- include "mytestchart.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}

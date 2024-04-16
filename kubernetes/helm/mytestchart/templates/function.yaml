@@ -1,0 +1,19 @@
+# https://helm.sh/docs/chart_template_guide/function_list/#cryptographic-and-security-functions
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-test
+data:
+  sha1sum: {{ sha1sum "Hello world!" }}
+  sha256sum: {{ sha256sum "Hello world!"}}
+  adler32sum: {{ adler32sum "Hello world!"}}
+  htpasswd: {{ htpasswd "myUser" "myPassword" }}
+  derive_password: {{ derivePassword 1 "long" "password" "user" "example.com"}}
+  encrypt_aes: {{ encryptAES "secretkey" "plaintext"}}
+  decrypt_aes: {{"30tEfhuJSVRhpG97XCuWgz2okj7L8vQ1s6V9zVUPeDQ=" | decryptAES "secretkey"}}
+  now: {{ now | quote }}
+  one_hour_ago: {{ (ago "1h") | quote }}
+  date: {{ now | date "2006-01-02" }}
+  specific_date_in_zone: {{ dateInZone "2006-01-02" "2012-11-01" "Asia/Shanghai" | quote }}
+  duration: {{ duration 95 | quote }}
+  duration_round: {{ durationRound "1h30m" | quote }}

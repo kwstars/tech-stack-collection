@@ -1,0 +1,8 @@
+感谢您安装 {{ .Chart.Name }}。
+
+您的发布版本名为 {{ .Release.Name }}。
+
+要了解更多关于发布版本的信息，请尝试：
+
+$ helm status {{ .Release.Name }}
+$ helm get all {{ .Release.Name }}

@@ -1,0 +1,14 @@
+food: 111
+favorite:
+  drink: "tea"
+  number1: 3
+  number2: 7
+
+autoscaling:
+  enabled: false
+
+mysubchart:
+  myvalue: 123
+
+global:
+  globalValue: 123

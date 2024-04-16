@@ -18,6 +18,7 @@ move-binary:
 	$(SUDO) chmod +x /usr/local/bin/k3s
 
 # 请将<node-ip>, <advertise-address>, <tls-san> 替换为节点的IP
+# 如果网络问题可以配置代理: https://docs.k3s.io/advanced#configuring-an-http-proxy
 install-server-node: move-images move-binary
 	export INSTALL_K3S_EXEC="server --write-kubeconfig ~/.kube/config --node-ip 10.0.0.132 --advertise-address 10.0.0.132 --tls-san 10.0.0.132 --default-local-storage-path /data/local-storage"
 	export INSTALL_K3S_SKIP_DOWNLOAD=true
