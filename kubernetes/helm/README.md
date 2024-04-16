@@ -341,6 +341,120 @@ Subcharts and Global Values 是 Helm 中的两个重要概念。
 
 注意，Go 模板语言提供了一个 `block` 关键字，允许开发者提供一个默认实现，然后在后面覆盖它。但在 Helm charts 中，`block` 不是覆盖的最佳工具，因为如果提供了多个相同的 `block` 实现，选择哪个是不可预测的。建议使用 `include`。
 
+## [Chart Hooks](https://helm.sh/docs/topics/charts_hooks/)
+
+Helm 提供了一个钩子机制，允许图表开发者在发布生命周期的某些点进行干预。例如，你可以使用钩子来：
+
+- 在安装任何其他图表之前，加载 ConfigMap 或 Secret。
+- 在安装新图表之前，执行一个 Job 来备份数据库，然后在升级后执行第二个 Job 来恢复数据。
+- 在删除发布之前运行一个 Job，以便在删除服务之前优雅地将其从轮换中移除。
+
+钩子就像常规模板一样工作，但是它们有特殊的注解，使 Helm 以不同的方式使用它们。在这一部分，我们将介绍钩子的基本使用模式。
+
+钩子和发布生命周期
+钩子允许你，图表开发者，在发布生命周期的关键点进行操作。例如，考虑 helm install 的生命周期。默认情况下，生命周期如下：
+
+- 用户运行 helm install foo
+- 调用 Helm 库安装 API
+- 在一些验证之后，库渲染 foo 模板
+- 库将生成的资源加载到 Kubernetes
+- 库将发布对象（和其他数据）返回给客户端
+- 客户端退出
+
+Helm 为安装生命周期定义了两个钩子：pre-install 和 post-install。如果 foo 图表的开发者实现了这两个钩子，生命周期就会像这样改变：
+
+- 用户运行 helm install foo
+- 调用 Helm 库安装 API
+- 在 crds/ 目录中安装 CRDs
+- 在一些验证之后，库渲染 foo 模板
+- 库准备执行 pre-install 钩子（将钩子资源加载到 Kubernetes）
+- 库按权重（默认为 0）、资源类型和名称的升序对钩子进行排序。
+- 然后，库首先加载权重最低的钩子（从负到正）
+- 库等待直到钩子处于 "就绪" 状态（除了 CRDs）
+- 库将生成的资源加载到 Kubernetes。注意，如果设置了 --wait 标志，库将等待所有资源处于就绪状态，并且在它们就绪之前不会运行 post-install 钩子。
+- 库执行 post-install 钩子（加载钩子资源）
+- 库等待直到钩子处于 "就绪" 状态
+- 库将发布对象（和其他数据）返回给客户端
+- 客户端退出
+
+编写钩子
+钩子只是带有特殊注解的 Kubernetes 清单文件。因为它们是模板文件，所以你可以使用所有的正常模板功能，包括读取 .Values、.Release 和 .Template。
+
+例如，这个模板，存储在 templates/post-install-job.yaml 中，声明了一个在 post-install 运行的 job：
+
+```yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ .Release.Name }}"
+  labels:
+    app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+    app.kubernetes.io/instance: {{ .Release.Name | quote }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion }}
+    helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+  annotations:
+    # 这是定义此资源为钩子的内容。没有这一行，
+    # job 就被认为是发布的一部分。
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    metadata:
+      name: "{{ .Release.Name }}"
+      labels:
+        app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+        app.kubernetes.io/instance: {{ .Release.Name | quote }}
+        helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: post-install-job
+        image: "alpine:3.3"
+        command: ["/bin/sleep","{{ default "10" .Values.sleepyTime }}"]
+```
+
+使这个模板成为钩子的是注解：
+
+```yaml
+annotations:
+  "helm.sh/hook": post-install
+```
+
+一个资源可以实现多个钩子：
+
+```yaml
+annotations:
+  "helm.sh/hook": post-install,post-upgrade
+```
+
+同样，对于可以实现给定钩子的不同资源没有限制。例如，可以声明一个 secret 和一个 config map 作为 pre-install 钩子。
+
+当子图表声明钩子时，这些也会被评估。顶级图表无法禁用子图表声明的钩子。
+
+可以为钩子定义一个权重，这将有助于构建一个确定的执行顺序。权重是使用以下注解定义的：
+
+```yaml
+annotations:
+  "helm.sh/hook-weight": "5"
+```
+
+钩子删除策略
+可以定义决定何时删除相应钩子资源的策略。钩子删除策略是使用以下注解定义的：
+
+```yaml
+annotations:
+  "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+```
+
+你可以选择一个或多个定义的注解值：
+
+注解值 描述
+before-hook-creation 在启动新钩子之前删除之前的资源（默认）
+hook-succeeded 在钩子成功执行后删除资源
+hook-failed 如果钩子在执行过程中失败，则删除资源
+如果没有指定钩子删除策略注解，则默认应用 before-hook-creation 行为。
+
 ## `NOTES.txt` 文件
 
 `NOTES.txt` 文件会在用户安装或升级 Helm chart 时显示。在这个文件中，我们使用了一些内置的 Helm 模板变量，如 `.Chart.Name` 和 `.Release.Name`，分别表示 chart 的名称和 release 的名称。用户可以通过运行 `helm status` 和 `helm get all` 命令来获取更多关于 release 的信息。
