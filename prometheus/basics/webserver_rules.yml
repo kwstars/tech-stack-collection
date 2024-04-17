@@ -1,0 +1,12 @@
+groups:
+  - name: webserver
+    rules:
+      - alert: HighTraffic
+        expr: sum(rate(http_requests_total[5m])) by (job) > 1000
+        for: 10m
+        labels:
+          severity: page
+        annotations:
+          summary: High traffic
+      - record: job:http_requests:rate5m
+        expr: rate(http_requests_total[5m])

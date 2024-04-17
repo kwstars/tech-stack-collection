@@ -1,0 +1,30 @@
+# https://prometheus.io/docs/prometheus/latest/configuration/configuration/
+# https://github.com/prometheus/prometheus/blob/main/documentation/examples/prometheus.yml
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+
+rule_files:
+  - "first_rules.yml"
+  - "webserver_rules.yml"
+  - "database_rules.yml"
+
+scrape_configs:
+  # 第一个抓取任务，用于抓取 Prometheus 自身的数据
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # 第二个抓取任务，用于抓取 Node Exporter 的数据
+  - job_name: "node_exporter"
+    # 这个任务的抓取间隔时间，会覆盖全局的配置
+    scrape_interval: 5s
+    static_configs:
+      - targets: ["node_exporter:9100"]

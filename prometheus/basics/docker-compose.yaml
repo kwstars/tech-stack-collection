@@ -1,0 +1,65 @@
+services:
+  prometheus:
+    image: prom/prometheus:v2.45.4
+    container_name: prometheus
+    user: root
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
+      - "--log.level=debug" # 添加这一行来启用调试日志
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./first_rules.yml:/etc/prometheus/first_rules.yml
+      - ./webserver_rules.yml:/etc/prometheus/webserver_rules.yml
+      - ./database_rules.yml:/etc/prometheus/database_rules.yml
+      - /data/prometheus:/prometheus
+    ports:
+      - 9090:9090
+    restart: unless-stopped
+
+  node_exporter:
+    image: quay.io/prometheus/node-exporter:v1.7.0
+    container_name: node_exporter
+    restart: unless-stopped
+    volumes:
+      - "/:/host:ro,rslave"
+    command:
+      - "--path.rootfs=/host"
+    ports:
+      - 9100:9100
+
+  pushgateway:
+    image: prom/pushgateway:v1.8.0
+    container_name: pushgateway
+    ports:
+      - 9091:9091
+    restart: unless-stopped
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: alertmanager
+    volumes:
+      - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml
+    command:
+      - "--config.file=/etc/alertmanager/alertmanager.yml"
+    ports:
+      - 9093:9093
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:10.4.2-ubuntu
+    container_name: grafana
+    user: root
+    volumes:
+      - /data/grafana:/var/lib/grafana
+      - ./grafana.ini:/etc/grafana/grafana.ini
+    ports:
+      - 3000:3000
+    restart: unless-stopped
+
+networks:
+  default:
+    name: monitoring
+    driver: bridge
