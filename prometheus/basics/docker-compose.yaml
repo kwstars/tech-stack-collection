@@ -1,7 +1,6 @@
 services:
   prometheus:
     image: prom/prometheus:v2.45.4
-    container_name: prometheus
     user: root
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
@@ -21,43 +20,136 @@ services:
 
   node_exporter:
     image: quay.io/prometheus/node-exporter:v1.7.0
-    container_name: node_exporter
-    restart: unless-stopped
+    pid: host
+    restart: unless-stopped # 确保在容器退出或者 Docker 重启后，容器能够自动重启
+    security_opt:
+      - no-new-privileges:true # 防止容器进程获取新的权限
+    read_only: true # 将容器文件系统设置为只读，以增加安全性
     volumes:
-      - "/:/host:ro,rslave"
+      - "/proc:/host/proc:ro"
+      - "/sys:/host/sys:ro"
+      - "/:/rootfs:ro"
     command:
-      - "--path.rootfs=/host"
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--path.rootfs=/rootfs"
+      - "--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)" # 忽略了不必要的文件系统，以提高性能
     ports:
       - 9100:9100
 
   pushgateway:
     image: prom/pushgateway:v1.8.0
-    container_name: pushgateway
     ports:
       - 9091:9091
-    restart: unless-stopped
 
   alertmanager:
     image: prom/alertmanager:v0.27.0
-    container_name: alertmanager
     volumes:
       - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml
     command:
       - "--config.file=/etc/alertmanager/alertmanager.yml"
     ports:
       - 9093:9093
-    restart: unless-stopped
 
   grafana:
     image: grafana/grafana:10.4.2-ubuntu
-    container_name: grafana
     user: root
     volumes:
       - /data/grafana:/var/lib/grafana
       - ./grafana.ini:/etc/grafana/grafana.ini
     ports:
-      - 3000:3000
-    restart: unless-stopped
+      - 13000:3000
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly no", "--databases 64"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 1s
+      timeout: 3s
+      retries: 3
+
+  redis_exporter:
+    image: oliver006/redis_exporter:v1.58.0
+    ports:
+      - "9121:9121"
+    command:
+      - "--redis.addr=redis://redis:6379"
+    depends_on:
+      - redis
+      - prometheus
+
+  mysql:
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: "mysql"
+      MYSQL_DATABASE: test
+    healthcheck:
+      test: mysqladmin ping -h 127.0.0.1 -u root --password=$$MYSQL_ROOT_PASSWORD
+
+  # https://github.com/prometheus/mysqld_exporter/issues/750
+  # https://github.com/prometheus/mysqld_exporter/issues/754
+  mysqld_exporter:
+    image: prom/mysqld-exporter-linux-amd64:v0.15.1
+    ports:
+      - "9104:9104"
+    # environment:
+    # - DATA_SOURCE_NAME="root:mysql@(mysql:3306)/test"
+    # command:
+    #   - "--collect.global_status"
+    #   - "--collect.info_schema.innodb_metrics"
+    # volumes:
+    #   - .my.cnf:/root/.my.cnf
+    command:
+      # - "--config.my-cnf=/root/.my.cnf"
+      - "--mysqld.username=root:mysql"
+    # #  - "--mysqld.address=host:port"
+    depends_on:
+      - mysql
+      - prometheus
+
+  mongodb:
+    image: mongo:7.0
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: mongodb
+    ports:
+      - 27017:27017
+
+  mongodb_exporter:
+    image: percona/mongodb_exporter:0.40
+    ports:
+      - "9216:9216"
+    environment:
+      MONGODB_URI: "mongodb://root:mongodb@mongodb:27017/"
+    depends_on:
+      - mongodb
+      - prometheus
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.15
+    environment:
+      - node.name=elasticsearch
+      - cluster.name=docker-cluster
+      - bootstrap.memory_lock=true
+      - xpack.security.enabled=false
+      - discovery.type=single-node
+    ports:
+      - 9200:9200
+      - 9300:9300
+
+  elasticsearch_exporter:
+    image: prometheuscommunity/elasticsearch-exporter:v1.7.0
+    ports:
+      - "9114:9114"
+    environment:
+      ES_URI: "http://elasticsearch:9200"
+    depends_on:
+      - elasticsearch
 
 networks:
   default:

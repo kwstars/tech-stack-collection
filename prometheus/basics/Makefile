@@ -1,16 +1,22 @@
-.PHONY: run stop remove help
+.PHONY: run stop remove help install-dashboards
 
 run:
-	docker-compose up -d prometheus node_exporter alertmanager grafana
+	@docker-compose up -d
 
 stop:
-	docker-compose stop
+	@docker-compose stop
 
 remove:
-	docker-compose rm -sf
+	@docker-compose rm -sf
 
 ps:
-	docker-compose ps
+	@docker-compose ps
+
+install-dashboards:
+	@bash install_dashboards.sh
+
+clean:
+	@rm -fr dashboards
 
 help:
 	@echo "run    - Start the prometheus and node_exporter services."
