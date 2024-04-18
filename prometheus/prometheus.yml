@@ -1,0 +1,66 @@
+# https://prometheus.io/docs/prometheus/latest/configuration/configuration/
+# https://github.com/prometheus/prometheus/blob/main/documentation/examples/prometheus.yml
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+
+rule_files:
+  - "first_rules.yml"
+  - "webserver_rules.yml"
+  - "database_rules.yml"
+
+scrape_configs:
+  # 第一个抓取任务，用于抓取 Prometheus 自身的数据
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # 第二个抓取任务，用于抓取 Node Exporter 的数据
+  # - job_name: "node_exporter"
+  #   # 这个任务的抓取间隔时间，会覆盖全局的配置
+  #   scrape_interval: 5s
+  #   static_configs:
+  #     - targets: ["node_exporter:9100"]
+  - job_name: "node_exporter"
+    file_sd_configs:
+      - refresh_interval: "10s" # default 5m
+        files:
+          - "/etc/prometheus/file_sd_configs.json"
+
+  # - job_name: redis_exporter
+  #   static_configs:
+  #     - targets: ["redis_exporter:9121"]
+
+  # - job_name: mysqld_exporter
+  #   static_configs:
+  #     - targets: ["mysqld_exporter:9104"]
+
+  # - job_name: mongodb_exporter
+  #   static_configs:
+  #     - targets: ["mongodb_exporter:9216"]
+
+  # - job_name: elasticsearch_exporter
+  #   static_configs:
+  #     - targets: ["elasticsearch_exporter:9114"]
+
+  # - job_name: "blackbox"
+  #   metrics_path: /probe
+  #   params:
+  #     module: [http_2xx]
+  #   static_configs:
+  #     - targets:
+  #         - http://example.com
+  #   relabel_configs:
+  #     - source_labels: [__address__]
+  #       target_label: __param_target
+  #     - source_labels: [__param_target]
+  #       target_label: instance
+  #     - target_label: __address__
+  #       replacement: blackbox_exporter:9115 # Blackbox exporter's address

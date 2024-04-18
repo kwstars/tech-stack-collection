@@ -1,0 +1,12 @@
+[
+  {
+    "targets": [
+      "node_exporter:9100",
+      "10.0.0.136:9100"
+    ],
+    "labels": {
+      "team": "infra",
+      "job": "node"
+    }
+  }
+]

@@ -13,6 +13,7 @@ services:
       - ./first_rules.yml:/etc/prometheus/first_rules.yml
       - ./webserver_rules.yml:/etc/prometheus/webserver_rules.yml
       - ./database_rules.yml:/etc/prometheus/database_rules.yml
+      - ./file_sd_configs.json:/etc/prometheus/file_sd_configs.json
       - /data/prometheus:/prometheus
     ports:
       - 9090:9090
@@ -29,11 +30,13 @@ services:
       - "/proc:/host/proc:ro"
       - "/sys:/host/sys:ro"
       - "/:/rootfs:ro"
+      - "/var/lib/node_exporter/textfile_collector/shadow.prom:/data/textfile_collector/shadow.prom:ro"
     command:
       - "--path.procfs=/host/proc"
       - "--path.sysfs=/host/sys"
       - "--path.rootfs=/rootfs"
       - "--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)" # 忽略了不必要的文件系统，以提高性能
+      - "--collector.textfile.directory=/data/textfile_collector" # 指定 textfile collector 的目录
     ports:
       - 9100:9100
 
@@ -52,7 +55,7 @@ services:
       - 9093:9093
 
   grafana:
-    image: grafana/grafana:10.4.2-ubuntu
+    image: grafana/grafana-oss:10.4.2-ubuntu
     user: root
     volumes:
       - /data/grafana:/var/lib/grafana

@@ -351,7 +351,7 @@ sort_desc(rate(node_cpu_seconds_total{mode="user"}[5m]))
 
 `histogram_quantile(φ scalar, b instant-vector)` 是 Prometheus 中的一个内置函数，用于从经典直方图或原生直方图中计算 φ-分位数（0 ≤ φ ≤ 1）。
 
-以下是一些真实的示例：
+以下是一些示例：
 
 ```bash
 # 计算过去 10 分钟内请求持续时间的 90th 百分位数
@@ -455,7 +455,7 @@ bottomk(5, rate(node_cpu_seconds_total{mode="user"}[5m]))
 
 Prometheus 提供了一系列基于时间的聚合函数，这些函数可以对给定范围向量的每个序列进行时间聚合，并返回一个包含每个序列聚合结果的即时向量。
 
-以下是一些真实的示例：
+以下是一些示例：
 
 ```bash
 # 计算过去一小时内所有点的平均值
@@ -581,5 +581,8 @@ relabel_configs:
 ## AlertManager
 
 ## Grafana
+
+- [Dashboards](https://grafana.com/docs/grafana/latest/dashboards/)
+- [Variables](https://grafana.com/docs/grafana/latest/dashboards/variables/)
 
 ## Thanos
