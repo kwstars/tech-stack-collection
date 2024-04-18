@@ -10,3 +10,22 @@ groups:
           summary: High traffic
       - record: job:http_requests:rate5m
         expr: rate(http_requests_total[5m])
+  - name: demo-service-alerts
+    rules:
+      - alert: Many5xxErrors
+        expr: |
+          (
+            sum by(path, instance, job) (
+              rate(demo_api_request_duration_seconds_count{status=~"5..",job="demo"}[1m])
+            )
+          /
+            sum by(path, instance, job) (
+              rate(demo_api_request_duration_seconds_count{job="demo"}[1m])
+            ) * 100 > 0.5
+          )
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          title: "{{$labels.instance}} high 5xx rate on {{$labels.path}}"
+          description: "The 5xx error rate for path {{$labels.path}} on {{$labels.instance}} is {{$value}}%."

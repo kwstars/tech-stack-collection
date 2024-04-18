@@ -582,11 +582,81 @@ relabel_configs:
 
 ## [服务发现](https://prometheus.io/docs/prometheus/latest/configuration/configuration/)
 
+Prometheus 的服务发现（Service Discovery）是其核心功能之一，它允许 Prometheus 自动发现目标系统并开始收集这些系统的指标。这对于动态变化的环境（如 Kubernetes）非常有用，因为你不需要手动更新 Prometheus 的配置来添加或删除目标系统。
+
+Prometheus 支持多种服务发现机制，包括：
+
+1. **静态配置**：你可以在 Prometheus 的配置文件中手动指定目标系统的地址。
+2. **文件服务发现**：Prometheus 可以监视指定的 JSON 或 YAML 文件，文件中包含了目标系统的信息。
+3. **Consul**：Prometheus 可以从 Consul 服务发现和配置中心自动发现目标系统。
+4. **DNS SRV 记录**：Prometheus 可以查询 DNS SRV 记录来发现目标系统。
+5. **EC2**：Prometheus 可以使用 Amazon EC2 API 来发现 EC2 实例。
+6. **Kubernetes**：Prometheus 可以使用 Kubernetes API 来发现 Kubernetes 中的服务和 Pods。
+7. **Marathon**：Prometheus 可以使用 Marathon API 来发现 Marathon 应用。
+8. **OpenStack**：Prometheus 可以使用 OpenStack API 来发现 Nova 实例。
+9. ......
+
 ## [Exporter](https://prometheus.io/docs/instrumenting/exporters/)
+
+在 Prometheus 监控系统中，Exporter 是一个重要的组件。它是一个服务，可以从被监控的系统中抓取指标，然后以 Prometheus 可以理解的格式暴露这些指标。
+
+Prometheus 有多种类型的 Exporter，包括：
+
+1. **官方 Exporter**：Prometheus 团队提供了一些官方的 Exporter，用于监控常见的服务，如 Linux 系统（Node Exporter）、HTTP 服务（Blackbox Exporter）和数据库（如 MySQL Exporter、PostgreSQL Exporter）。
+2. **第三方 Exporter**：社区也提供了许多第三方的 Exporter，用于监控各种不同的服务和应用。
+3. **自定义 Exporter**：如果你需要监控的服务没有现成的 Exporter，你也可以自己编写一个 Exporter。Prometheus 提供了多种语言的客户端库，可以帮助你编写自定义的 Exporter。
+
+每个 Exporter 都会运行一个 HTTP 服务器，Prometheus 服务器可以定期从这个 HTTP 服务器上抓取指标。你需要在 Prometheus 的配置文件中指定每个 Exporter 的地址和抓取间隔。
 
 ## [Pushgateway](https://prometheus.io/docs/practices/pushing/)
 
+Pushgateway 是 Prometheus 的一个组件，它允许短期的批处理作业推送它们的指标到 Pushgateway，然后 Prometheus 服务器可以从 Pushgateway 拉取这些指标。这对于不能长时间运行以允许 Prometheus 拉取其指标的作业非常有用。
+
+有两种主要的方式可以推送数据到 Pushgateway：
+
+1. **HTTP API**：Pushgateway 提供了一个 HTTP API，你可以使用任何能发送 HTTP 请求的工具（如 curl）或编程语言（如 Python、Go）来推送数据。
+2. **Prometheus 客户端库**：Prometheus 提供了多种语言的客户端库（如 Go、Java、Python），这些客户端库通常包含推送数据到 Pushgateway 的功能。
+
+这两种方式都需要你提供 Pushgateway 的地址和端口，以及你的作业的名称。你还可以提供其他标签来进一步描述你的指标。
+
 ## [AlertManager](https://prometheus.io/docs/alerting/latest/alertmanager/)
+
+### 报警流程
+
+AlertManager 是 Prometheus 监控系统的一部分，负责处理 Prometheus 服务器发送的警报，并将警报通知给指定的接收者。
+
+以下是 AlertManager 的报警触发流程：
+
+1. **警报生成**：Prometheus 服务器根据定义的警报规则定期评估时间序列数据。如果满足警报条件，Prometheus 服务器将生成警报并发送到 AlertManager。
+2. **警报分组**：AlertManager 根据配置文件中的 `group_by` 参数将接收到的警报分组。这可以减少警报通知的数量，因为同一组的警报将一起发送。
+3. **警报抑制**：AlertManager 根据配置文件中的 `inhibit_rules` 参数抑制某些警报。如果一个警报的源匹配和目标匹配满足抑制规则，那么这个警报将不会发送。
+4. **警报路由**：AlertManager 根据配置文件中的 `route` 参数将警报路由到指定的接收者。你可以根据警报的标签和严重级别定义路由规则。
+5. **警报通知**：AlertManager 将警报通知给指定的接收者。接收者可以是电子邮件、Slack、PagerDuty 等。
+
+以下是 AlertManager 配置文件中的一些关键参数：
+
+- `group_by`：定义了哪些标签应该用于将警报分组。同一组的警报将一起发送。
+- `group_wait`：定义了在首次发送警报通知之前，AlertManager 应该等待新组的警报多长时间。
+- `group_interval`：定义了如果警报组中至少有一个新的未解决的警报，AlertManager 应该多久发送一次警报通知。
+- `repeat_interval`：定义了如果警报组中没有新的未解决的警报，AlertManager 应该多久发送一次警报通知。
+- `routes`：定义了如何将警报路由到接收者。你可以根据警报的标签和严重级别定义路由规则。
+- `receivers`：定义了接收警报通知的接收者。接收者可以是电子邮件、Slack、PagerDuty 等。
+- `inhibit_rules`：定义了哪些警报应该被抑制。如果一个警报的源匹配和目标匹配满足抑制规则，那么这个警报将不会发送。
+
+### [模板](https://prometheus.io/docs/prometheus/latest/configuration/template_examples/#template-examples)
+
+### [报警抑制](https://prometheus.io/docs/alerting/latest/configuration/#inhibition-related-settings)
+
+### [Recording Rules](https://prometheus.io/docs/prometheus/latest/configuration/recording_rules/)
+
+在 Prometheus 中，Recording Rules 是一种预先计算和保存常用或复杂表达式结果的方式。这样可以提高查询效率，同时也可以简化复杂查询的书写。
+
+Recording Rules 分为两种类型：
+
+1. **Recording Rules**：这种规则会将查询表达式的结果保存为一个新的时间序列。新的时间序列的名称通常由规则的名称决定。
+2. **Alerting Rules**：这种规则会根据查询表达式的结果触发警报。如果表达式的结果满足预定义的条件，Prometheus 就会生成警报并发送到 AlertManager。
+
+你可以在 Prometheus 的配置文件或者单独的规则文件中定义 Recording Rules。如果你在 Prometheus 的配置文件中定义了规则文件的路径，Prometheus 就会自动加载这些规则文件。
 
 ## Grafana
 
