@@ -1,3 +1,7 @@
+## [Architecture](https://prometheus.io/docs/introduction/overview/)
+
+![Architecture](https://prometheus.io/assets/architecture.png)
+
 ## PromQL
 
 PromQL 是 Prometheus Query Language 的缩写，是 Prometheus 提供的一种强大的数据查询语言。
@@ -582,7 +586,64 @@ relabel_configs:
 
 ## Grafana
 
-- [Dashboards](https://grafana.com/docs/grafana/latest/dashboards/)
-- [Variables](https://grafana.com/docs/grafana/latest/dashboards/variables/)
+### [添加数据源](https://grafana.com/docs/grafana/latest/datasources/)
+
+### [添加 Dashboard](https://grafana.com/docs/grafana/latest/dashboards/)
+
+在 "Panel" 页面中，你可以配置你的图表。在 "Query" 部分，你可以输入你的 PromQL 查询。例如，如果你想显示 CPU 使用率，你可以输入以下的 PromQL 查询：
+
+```promql
+# CPU使用率
+100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
+
+# 内存使用率
+avg by (instance) ((node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100)
+```
+
+### [可选择的 Variables](https://grafana.com/docs/grafana/latest/dashboards/variables/)
+
+在 Grafana 中添加变量（variables）的步骤如下：
+
+1. 在你的 Dashboard 页面，点击右上角的 "Dashboard settings" 按钮。
+
+2. 在 "Dashboard settings" 页面中，点击左侧的 "Variables" 菜单。
+
+3. 在 "Variables" 页面中，点击右上角的 "New Variables" 按钮。
+
+4. 在 "New Variable" 页面中，你可以配置你的变量。以下是一些基本的配置：
+
+   - General -> Name: 输入变量的名称，例如 "host"。
+
+   - General -> Label: 输入变量的标签，例如 "选择节点"。
+
+   - Type: 选择 "Query result"。
+
+   - Data source: 选择你的 Prometheus 数据源。
+
+   - Query options -> Query: 输入你的 PromQL 查询来获取 `host` 的值。例如，你可以输入以下的查询：
+
+     ```promql
+     up{job="node"}
+     ```
+
+   - Query options -> Regex: 输入一个正则表达式来从查询结果中提取 `host` 的值。例如，你可以输入以下的正则表达式：
+
+     ```regex
+     .*{instance="(.*?)".*
+     ```
+
+   - Selection options -> Include All option: 勾选这个选项，然后在 "Custom all value" 中输入 `.*`。
+
+5. 完成配置后，点击右下角的 "Apply" 按钮。
+
+6. 返回到 Dashboard 页面，你可以在 Dashboard 的顶部看到你的新变量。你可以从下拉菜单中选择一个 `host`，然后你的 Dashboard 会根据你选择的 `host` 更新。
+
+   ```promql
+   # CPU使用率
+   100 - (avg by (instance) (irate(node_cpu_seconds_total{instance=~"$host", mode="idle"}[5m])) * 100)
+
+   # 内存使用率
+   avg by (instance) ((node_memory_MemTotal_bytes{instance=~"$host"} - node_memory_MemAvailable_bytes{instance=~"$host"}) / node_memory_MemTotal_bytes{instance=~"$host"} * 100)
+   ```
 
 ## Thanos
