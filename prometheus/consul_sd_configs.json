@@ -1,0 +1,15 @@
+{
+  "id": "redis_exporter",
+  "name": "consul_sd",
+  "address": "redis_exporter",
+  "port": 9121,
+  "meta": {
+    "env": "production"
+  },
+  "checks": [
+    {
+      "http": "http://redis_exporter:9121/metrics",
+      "interval": "1s"
+    }
+  ]
+}

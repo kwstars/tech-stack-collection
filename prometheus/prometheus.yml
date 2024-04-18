@@ -17,26 +17,28 @@ rule_files:
   - "database_rules.yml"
 
 scrape_configs:
-  # 第一个抓取任务，用于抓取 Prometheus 自身的数据
+  # 抓取 Prometheus 自身的数据
   - job_name: "prometheus"
     static_configs:
       - targets: ["localhost:9090"]
 
-  # 第二个抓取任务，用于抓取 Node Exporter 的数据
-  # - job_name: "node_exporter"
-  #   # 这个任务的抓取间隔时间，会覆盖全局的配置
-  #   scrape_interval: 5s
-  #   static_configs:
-  #     - targets: ["node_exporter:9100"]
-  - job_name: "node_exporter"
+  - job_name: file_sd
     file_sd_configs:
       - refresh_interval: "10s" # default 5m
         files:
           - "/etc/prometheus/file_sd_configs.json"
 
-  # - job_name: redis_exporter
-  #   static_configs:
-  #     - targets: ["redis_exporter:9121"]
+  - job_name: consul_sd
+    consul_sd_configs:
+      - server: "consul:8500"
+        refresh_interval: 10s # default = 30s
+    relabel_configs:
+      - action: keep
+        source_labels: [__meta_consul_service, __meta_consul_health]
+        regex: consul_sd;passing
+      - action: labelmap
+        regex: __meta_consul_service_metadata_(.*)
+        replacement: consul_$1
 
   # - job_name: mysqld_exporter
   #   static_configs:
