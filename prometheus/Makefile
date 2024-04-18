@@ -2,6 +2,15 @@
 
 TEXTFILE=/var/lib/node_exporter/textfile_collector
 
+define PUSH_METRICS
+# TYPE some_metric counter
+some_metric{label="val1"} 42
+# TYPE another_metric gauge
+# HELP another_metric Just an example.
+another_metric 2398.283
+endef
+export PUSH_METRICS
+
 run:
 	@docker-compose up -d prometheus node_exporter grafana alertmanager pushgateway consul redis redis_exporter
 
@@ -13,6 +22,15 @@ remove:
 
 ps:
 	@docker-compose ps
+
+prometheus-reload:
+	@curl -X POST http://localhost:9090/-/reload
+
+pushgateway-push:
+	@echo "$$PUSH_METRICS" | curl --data-binary @- http://127.0.0.1:9091/metrics/job/some_job/instance/some_instance
+
+pushgateway-delete:
+	@curl -X DELETE http://127.0.0.1:9091/metrics/job/some_job/instance/some_instance
 
 # 当你看到 "Dashboard not found" 错误时，这可能意味着你正在尝试导入一个包含无效 uid 或 id 的 Dashboard。在这种情况下，你可以尝试删除所有 uid 和 id 字段，然后再次尝试导入该 Dashboard。
 grafana-dashboards:
@@ -44,7 +62,7 @@ consul-services:
 	@curl http://localhost:8500/v1/agent/services
 
 clean:
-	@sudo rm -f /etc/cron.d/shadow_entries
+	@sudo rm -fr /etc/cron.d/shadow_entries node_modules
 
 help:
 	@echo "run    - Start the prometheus and node_exporter services."

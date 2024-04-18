@@ -578,11 +578,15 @@ relabel_configs:
     regex: 2
 ```
 
+推荐使用 [relabeler 工具](https://relabeler.promlabs.com/) 进行测试。这是一个强大的工具，可以帮助你更好地理解和应用 Relabeling。
+
 ## [服务发现](https://prometheus.io/docs/prometheus/latest/configuration/configuration/)
 
 ## [Exporter](https://prometheus.io/docs/instrumenting/exporters/)
 
-## AlertManager
+## [Pushgateway](https://prometheus.io/docs/practices/pushing/)
+
+## [AlertManager](https://prometheus.io/docs/alerting/latest/alertmanager/)
 
 ## Grafana
 
