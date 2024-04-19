@@ -6,16 +6,19 @@ services:
       - "--config.file=/etc/prometheus/prometheus.yml" # 指定配置文件
       - "--web.console.libraries=/usr/share/prometheus/console_libraries" # 指定控制台库目录
       - "--web.console.templates=/usr/share/prometheus/consoles" # 指定控制台模板目录
+      # https://prometheus.io/docs/prometheus/latest/storage/#operational-aspects
       - "--storage.tsdb.path=/prometheus" # 指定tsdb数据路径
-      - "--storage.tsdb.retention.time=24h" # 数据保留时间
-      - "--log.level=debug" # 启用调试日志
+      - "--storage.tsdb.retention.time=24h" # 数据保留时间, 默认15d
+      - "--storage.tsdb.retention.size=0" # 数据保留大小, 默认0
+      - "--storage.tsdb.wal-compression" # 启用WAL日志压缩
+      # https://prometheus.io/docs/operating/security/#prometheus
       - "--web.enable-admin-api" # 控制对admin HTTP API的访问，其中包括删除时间序列等功能
       - "--web.enable-lifecycle" # 支持热更新，直接执行localhost:9090/-/reload立即生效
+      - "--log.level=debug" # 启用调试日志
+
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
-      - ./first_rules.yml:/etc/prometheus/first_rules.yml
-      - ./webserver_rules.yml:/etc/prometheus/webserver_rules.yml
-      - ./database_rules.yml:/etc/prometheus/database_rules.yml
+      - ./rules:/etc/prometheus/rules
       - ./file_sd_configs.json:/etc/prometheus/file_sd_configs.json
       - /data/prometheus:/prometheus
     ports:

@@ -12,9 +12,8 @@ alerting:
             - alertmanager:9093
 
 rule_files:
-  - "first_rules.yml"
-  - "webserver_rules.yml"
-  - "database_rules.yml"
+  - /etc/prometheus/rules/*rules.yml
+  - /etc/prometheus/rules/*rules.yaml
 
 scrape_configs:
   # 抓取 Prometheus 自身的数据

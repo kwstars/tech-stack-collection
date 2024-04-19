@@ -23,6 +23,7 @@ remove:
 ps:
 	@docker-compose ps
 
+# https://prometheus.io/docs/prometheus/latest/management_api/
 prometheus-reload:
 	@curl -X POST http://localhost:9090/-/reload
 

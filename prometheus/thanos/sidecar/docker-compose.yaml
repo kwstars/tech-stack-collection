@@ -1,0 +1,248 @@
+services:
+  prometheus1:
+    image: prom/prometheus:v2.45.4
+    user: root
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml" # 指定配置文件
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries" # 指定控制台库目录
+      - "--web.console.templates=/usr/share/prometheus/consoles" # 指定控制台模板目录
+      # https://prometheus.io/docs/prometheus/latest/storage/#operational-aspects
+      - "--storage.tsdb.path=/prometheus" # 指定tsdb数据路径
+      - "--storage.tsdb.retention.time=24h" # 数据保留时间, 默认15d
+      - "--storage.tsdb.retention.size=0" # 数据保留大小, 默认0
+      - "--storage.tsdb.wal-compression" # 启用WAL日志压缩
+      # https://thanos.io/tip/components/sidecar.md/#upload-compacted-blocks
+      - "--storage.tsdb.min-block-duration=2h" # 设置为2小时
+      - "--storage.tsdb.max-block-duration=2h" # 设置为2小时
+      # https://prometheus.io/docs/operating/security/#prometheus
+      - "--web.enable-admin-api" # 控制对admin HTTP API的访问，其中包括删除时间序列等功能
+      - "--web.enable-lifecycle" # 支持热更新，直接执行localhost:9090/-/reload立即生效
+      - "--log.level=debug" # 启用调试日志
+    volumes:
+      - ./prometheus1.yml:/etc/prometheus/prometheus.yml
+      - ./rules:/etc/prometheus/rules
+      - ./prometheus1_data:/prometheus
+    ports:
+      - 19090:9090
+
+  prometheus2:
+    image: prom/prometheus:v2.45.4
+    user: root
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml" # 指定配置文件
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries" # 指定控制台库目录
+      - "--web.console.templates=/usr/share/prometheus/consoles" # 指定控制台模板目录
+      # https://prometheus.io/docs/prometheus/latest/storage/#operational-aspects
+      - "--storage.tsdb.path=/prometheus" # 指定tsdb数据路径
+      - "--storage.tsdb.retention.time=24h" # 数据保留时间, 默认15d
+      - "--storage.tsdb.retention.size=0" # 数据保留大小, 默认0
+      - "--storage.tsdb.wal-compression" # 启用WAL日志压缩
+      - "--storage.tsdb.min-block-duration=2h" # 设置为2小时
+      - "--storage.tsdb.max-block-duration=2h" # 设置为2小时
+      # https://prometheus.io/docs/operating/security/#prometheus
+      - "--web.enable-admin-api" # 控制对admin HTTP API的访问，其中包括删除时间序列等功能
+      - "--web.enable-lifecycle" # 支持热更新，直接执行localhost:9090/-/reload立即生效
+      - "--log.level=debug" # 启用调试日志
+    volumes:
+      - ./prometheus2.yml:/etc/prometheus/prometheus.yml
+      - ./rules:/etc/prometheus/rules
+      - ./prometheus2_data:/prometheus
+    ports:
+      - 29090:9090
+
+  node_exporter:
+    image: quay.io/prometheus/node-exporter:v1.7.0
+    pid: host
+    # network_mode: host
+    ipc: host
+    restart: unless-stopped # 确保在容器退出或者 Docker 重启后，容器能够自动重启
+    security_opt:
+      - no-new-privileges:true # 防止容器进程获取新的权限
+    read_only: true # 将容器文件系统设置为只读，以增加安全性
+    volumes:
+      - "/proc:/host/proc:ro"
+      - "/sys:/host/sys:ro"
+      - "/:/rootfs:ro"
+      - "/var/lib/node_exporter/textfile_collector/shadow.prom:/data/textfile_collector/shadow.prom:ro"
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--path.rootfs=/rootfs"
+      - "--collector.textfile.directory=/data/textfile_collector" # 指定 textfile collector 的目录
+    # ports:
+    #   - 9100:9100
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    volumes:
+      - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml
+    command:
+      - "--config.file=/etc/alertmanager/alertmanager.yml"
+    ports:
+      - 9093:9093
+
+  grafana:
+    image: grafana/grafana-oss:10.4.2-ubuntu
+    user: root
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana.ini:/etc/grafana/grafana.ini
+    ports:
+      - 13000:3000
+
+  thanos-sidecar1:
+    image: quay.io/thanos/thanos:v0.34.1
+    command:
+      - "sidecar"
+      - "--tsdb.path=/prometheus" # 用于获取数据
+      - "--prometheus.url=http://prometheus1:9090" # 用于获取数据
+      - "--objstore.config-file=/etc/thanos/bucket.yml" # 上传数据到 minio
+      - "--reloader.rule-dir=/etc/prometheus/rules"
+    # ports:
+    #   - 10901:10901 # grpc
+    #   - 10902:10902 # http
+    volumes:
+      - ./prometheus1_data:/prometheus
+      - ./bucket.yml:/etc/thanos/bucket.yml
+      - ./rules:/etc/prometheus/rules
+    depends_on:
+      - prometheus1
+
+  thanos-sidecar2:
+    image: quay.io/thanos/thanos:v0.34.1
+    command:
+      - "sidecar"
+      - "--tsdb.path=/prometheus"
+      - "--prometheus.url=http://prometheus2:9090"
+      - "--objstore.config-file=/etc/thanos/bucket.yml"
+      - "--reloader.rule-dir=/etc/prometheus/rules"
+    # ports:
+    #   - 10903:10901 # grpc
+    #   - 10904:10902 # http
+    volumes:
+      - ./prometheus2_data:/prometheus
+      - ./bucket.yml:/etc/thanos/bucket.yml
+      - ./rules:/etc/prometheus/rules
+    depends_on:
+      - prometheus2
+
+  thanos-querier:
+    image: thanosio/thanos:v0.34.1
+    command:
+      - "query"
+      - "--grpc-address=0.0.0.0:10901"
+      - "--http-address=0.0.0.0:10902"
+      - "--query.replica-label=replica" # 用于 prometheus 中 external_labels 配置的 replica 去重
+      # querier 可以查询 sidecar 的数据，也可以查询 store 的数据
+      - "--endpoint=thanos-sidecar1:10901"
+      - "--endpoint=thanos-sidecar2:10901"
+      - "--endpoint=thanos-store:10901"
+      - "--endpoint=thanos-rule:10901"
+    ports:
+      - 10901:10901 #grpc
+      - 10902:10902 #http
+    depends_on:
+      - thanos-sidecar1
+      - thanos-sidecar2
+
+  minio:
+    image: quay.io/minio/minio:latest
+    command: server --console-address ":9001" /data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - minio_data:/data
+
+  thanos-store:
+    image: thanosio/thanos:v0.34.1
+    command:
+      - "store"
+      - "--objstore.config-file=/etc/thanos/bucket.yml"
+      # - "--data-dir=/local/state/data/dir" # 用于缓存，由于报错先禁用
+      - "--no-cache-index-header" # 用于禁用上面的缓存
+    volumes:
+      - ./bucket.yml:/etc/thanos/bucket.yml
+      - /tmp/thanos:/data
+    # ports:
+    #   - 10901:10901
+    depends_on:
+      - minio
+
+  # 这个只能1个
+  thanos-compactor:
+    image: thanosio/thanos:v0.34.1
+    command:
+      - "compact"
+      - "--objstore.config-file=/etc/thanos/bucket.yml"
+      - "--data-dir=/tmp/thanos-compact"
+      - "--retention.resolution-1h=180d" # 1小时的数据保留180天
+      - "--retention.resolution-5m=30d" # 5分钟的数据保留30天
+      - "--retention.resolution-raw=7d" # 原始数据保留7天
+      - "--wait" # 等待所有块都被压缩
+    volumes:
+      - ./bucket.yml:/etc/thanos/bucket.yml
+    ports:
+      - 10903:10902
+    depends_on:
+      - minio
+
+  thanos-query-frontend:
+    image: thanosio/thanos:v0.34.1
+    command:
+      - "query-frontend"
+      - "--http-address=0.0.0.0:9090"
+      - "--query-frontend.downstream-url=http://thanos-querier:10902"
+      - "--query-range.split-interval=1h" # 将查询范围请求分割为1小时的间隔。
+      - "--query-range.max-retries-per-request=2" # 每个请求的最大重试次数为2。
+      - "--query-frontend.log-queries-longer-than=10s" # 记录执行时间超过10秒的查询。
+      # - "--labels.response-cache-config-file=/etc/thanos/response-cache.yml" # 响应缓存的配置文件
+    # volumes:
+    #   - ./response-cache.yml:/etc/thanos/response-cache.yml
+    ports:
+      - "9090:9090"
+    depends_on:
+      - thanos-querier
+
+# Thanos Rule 的确需要通过整个查询链路来获取评估数据，这可能会增加故障的风险。而且，如果 Prometheus 服务器已经可以满足规则评估和告警需求，那么确实没有必要使用 Thanos Rule。
+# 然而，Thanos Rule 也有其独特的优点。例如，它可以在全局范围内评估规则和触发告警，这在多个 Prometheus 服务器的环境中是非常有用的。此外，Thanos Rule 还可以从 Thanos Store 中查询历史数据，从而在长时间范围内评估规则。
+# thanos-rule:
+#   image: thanosio/thanos:v0.34.1
+#   command:
+#     - "rule"
+#     - "--data-dir=/var/lib/thanos" # 用于存储规则评估的数据
+#     - "--eval-interval=30s" # 每30秒评估一次规则
+#     - "--rule-file=/etc/thanos/rules/*.yml" # 指定规则文件
+#     - "--alert.query-url=http://0.0.0.0:9090" # 用于查询
+#     - "--alertmanagers.url=http://alertmanager:9093" # 用于指定接收告警的 Alertmanager 的 URL。当 Thanos Ruler 检测到满足告警条件的事件时，它会将告警信息发送到这个 URL。
+#     - "--query=thanos-querier" # 用于指定 Thanos Query API 服务器的地址。这个选项可以重复使用，以指定多个 Query API 服务器。
+#     - "--objstore.config-file=/etc/thanos/bucket.yml"
+#     - "--alert.label-drop=replica" # 用于删除告警中的标签
+#   volumes:
+#     - /tmp/thanos:/var/lib/thanos
+#     - ./rules:/etc/thanos/rules
+#     - ./bucket.yml:/etc/thanos/bucket.yml
+#   ports:
+#     - 10904:10902
+#   depends_on:
+#     - thanos-querier
+#     - alertmanager
+
+volumes:
+  minio_data:
+  grafana_data:
+  thanos-rule-data:
+
+networks:
+  default:
+    name: monitoring
+    driver: bridge
+    external: true

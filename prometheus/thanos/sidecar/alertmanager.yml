@@ -1,0 +1,125 @@
+# https://github.com/prometheus/alertmanager/blob/main/doc/examples/simple.yml
+
+global:
+  smtp_smarthost: "localhost:25"
+  smtp_from: "alertmanager@example.org"
+  smtp_auth_username: "alertmanager"
+  smtp_auth_password: "password"
+  smtp_hello: "localhost"
+  smtp_require_tls: false
+
+# templates:
+#   - "/etc/alertmanager/template/*.tmpl"
+
+route:
+  # 用于指定如何将进入的警报分组在一起。例如，如果有多个警报同时来自 `cluster=A` 和 `alertname=LatencyHigh`，那么这些警报将被批量处理为一个单独的组。
+  # 如果你想通过所有可能的标签进行聚合，可以使用 '...' 作为唯一的标签名。这实际上完全禁用了聚合，所有的警报都会原样传递。除非你的警报量非常低，或者你的上游通知系统执行自己的分组，否则这可能不是你想要的。例如：`group_by: [...]`。
+  group_by: ["alertname", "cluster", "service"]
+
+  # 当一个新的警报组由一个进入的警报创建时，至少等待 'group_wait' 才发送初始通知。
+  # 这种方式确保了你在第一次通知时就能将同一组的多个警报（它们在短时间内开始触发）批量处理。
+  group_wait: 30s
+
+  # 当第一次通知被发送后，等待 'group_interval' 的时间，然后发送该组新开始触发的警报的批次。
+  group_interval: 5m
+
+  # 如果一个警报已经成功发送，那么等待 'repeat_interval' 的时间后再次发送。
+  repeat_interval: 3h
+
+  # 默认的接收者
+  receiver: slack-notifications
+
+  # 所有上述属性都会被所有子路由继承，并且可以在每个子路由上被覆盖。
+  routes:
+    - matchers:
+        - team ="node"
+      receiver: slack-notifications
+    # 第一个主要路由规则匹配 service 标签值为 "foo1"、"foo2" 或 "baz" 的警报。匹配的警报将被发送到 team-X-mails 接收器。然后，这个主要路由规则下有一个子路由规则，
+    # 它匹配 severity 标签值为 "critical" 的警报，匹配的警报将被发送到 team-X-pager 接收器。
+    - matchers:
+        - service=~"foo1|foo2|baz"
+      receiver: team-X-mails
+      routes:
+        - matchers:
+            - severity="critical"
+          receiver: team-X-pager
+    # 第二个主要路由规则匹配 service 标签值为 "files" 的警报。匹配的警报将被发送到 team-Y-mails 接收器。然后，
+    # 这个主要路由规则下有一个子路由规则，它匹配 severity 标签值为 "critical" 的警报，匹配的警报将被发送到 team-Y-pager 接收器。
+    - matchers:
+        - service="files"
+      receiver: team-Y-mails
+      routes:
+        - matchers:
+            - severity="critical"
+          receiver: team-Y-pager
+    # 第三个主要路由规则匹配 service 标签值为 "database" 的警报。匹配的警报将被发送到 team-DB-pager 接收器，
+    # 并按照 alertname、cluster 和 database 标签进行分组。然后，这个主要路由规则下有两个子路由规则：
+    # 第一个子路由规则匹配 owner 标签值为 "team-X" 的警报，匹配的警报将被发送到 team-X-pager 接收器。由于 continue 设置为 true，所以即使这个规则匹配，也会继续检查后面的规则。
+    # 第二个子路由规则匹配 owner 标签值为 "team-Y" 的警报，匹配的警报将被发送到 team-Y-pager 接收器。
+    - matchers:
+        - service="database"
+      receiver: team-DB-pager
+      group_by: [alertname, cluster, database]
+      routes:
+        - matchers:
+            - owner="team-X"
+          receiver: team-X-pager
+          continue: true
+        - matchers:
+            - owner="team-Y"
+          receiver: team-Y-pager
+
+inhibit_rules:
+  # 如果有一个名为 "NodeDown" 且严重级别为 "critical" 的警报（源匹配），
+  # 那么所有名为 "critical" 的警报（目标匹配）将被抑制，只要它们的 "instance" 标签相同。
+  - source_match:
+      alertname: "NodeDown"
+      severity: "critical"
+    target_match:
+      alertname: "critical"
+    equal: ["instance"]
+
+receivers:
+  - name: "team-X-mails"
+    email_configs:
+      - to: "team-X+alerts@example.org"
+
+  - name: "team-X-pager"
+    email_configs:
+      - to: "team-X+alerts-critical@example.org"
+    pagerduty_configs:
+      - service_key: <team-X-key>
+
+  - name: "team-Y-mails"
+    email_configs:
+      - to: "team-Y+alerts@example.org"
+
+  - name: "team-Y-pager"
+    pagerduty_configs:
+      - service_key: <team-Y-key>
+
+  - name: "team-DB-pager"
+    pagerduty_configs:
+      - service_key: <team-DB-key>
+
+  # https://api.slack.com/messaging/webhooks
+  - name: "slack-notifications"
+    slack_configs:
+      - send_resolved: true
+        api_url: "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX" # 你的 Slack webhook URL
+        channel: "#alerts" # 要发送通知的 Slack 频道
+        username: "Alertmanager" # 发送通知的用户名
+        icon_emoji: ":warning:" # 发送通知的用户的 emoji 图标
+        text: "{{ range .Alerts }}{{ .Annotations.summary }}\n{{ end }}" # 发送的消息文本
+        title: "Alert" # 消息的标题
+        fallback: "Fallback text" # 在无法显示附件的情况下显示的文本
+        color: '{{ if eq .Status "firing" }}danger{{ else }}good{{ end }}' # 根据警报的状态设置消息的颜色
+        mrkdwn_in: ["text", "fallback"] # 在哪些字段中使用 Markdown
+
+  - name: "wechat"
+    wechat_configs:
+      - corp_id: "wechat-corp-id"
+        to_party: "wechat-party-id"
+        agent_id: "wechat-agent-id"
+        api_secret: "wechat-api-secret"
+        send_resolved: true

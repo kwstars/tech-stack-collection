@@ -2,6 +2,31 @@
 
 ![Architecture](https://prometheus.io/assets/architecture.png)
 
+Prometheus 的架构主要由以下几个部分组成：
+
+1. **Prometheus Server**：Prometheus Server 是 Prometheus 的核心组件，它负责抓取和存储时间序列数据。Prometheus Server 通过 HTTP 协议从被监控的服务中抓取数据，然后将这些数据存储在本地磁盘上。
+
+2. **Service Discovery**：Prometheus 支持多种服务发现机制，如 Kubernetes、Consul、DNS 等。通过服务发现，Prometheus 可以自动发现并监控新的服务。
+
+3. **Exporters**：Exporter 是一种特殊的服务，它可以将原本不支持 Prometheus 的服务的数据转换为 Prometheus 可以抓取的格式。例如，Node Exporter 可以提供主机级别的指标，MySQL Exporter 可以提供 MySQL 数据库的指标。
+
+4. **Pushgateway**：对于那些不能被 Prometheus 主动抓取的短命令任务，如批处理任务、短命令行脚本等，可以使用 Pushgateway 将指标推送到 Prometheus。
+
+5. **Alertmanager**：当 Prometheus 的规则触发警报时，它会将警报发送到 Alertmanager。Alertmanager 负责去重、分组和路由警报，然后发送到如邮件、PagerDuty 等接收器。
+
+6. **Web UI/ API**：Prometheus 提供了一个 Web UI 和 API，用户可以通过 Web UI 或 API 查询 Prometheus 的数据和状态。
+
+7. **Storage**：Prometheus 默认使用本地磁盘进行数据存储。Prometheus 还支持远程存储接口，可以将数据发送到外部的存储系统，如 InfluxDB、OpenTSDB、Cortex、Thanos 等。
+
+Prometheus 的部署方案主要有以下几种：
+
+1. **本地存储**：Prometheus 默认使用本地磁盘进行数据持久化。这种方式简单易用，但是数据的保留期限受到磁盘空间的限制，且无法实现数据的长期存储。
+2. **远程存储**：Prometheus 支持远程存储接口，可以将数据发送到外部的存储系统，如 InfluxDB、OpenTSDB、Cortex、Thanos 等。这种方式可以实现数据的长期存储，但是需要额外的存储系统。
+3. **Prometheus Federation**：Prometheus Federation 允许一个 Prometheus 服务器抓取另一个 Prometheus 服务器的数据，这可以用来实现数据的备份和冗余。
+4. **Prometheus 高可用对**：可以运行两个相同配置的 Prometheus 服务器，它们独立地抓取和存储相同的数据。在查询时，可以使用 Prometheus 的查询层（如 Thanos Query 或 Cortex）来合并这两个服务器的数据。这种方式可以提高数据的可用性，但是会增加存储和计算的开销。
+5. **Thanos**：Thanos 是一个 Prometheus 的扩展，它可以将 Prometheus 的数据上传到对象存储（如 Amazon S3、Google Cloud Storage），实现数据的长期存储和高可用。Thanos 还提供了全局查询、数据压缩、规则评估等功能。
+6. **Cortex**：Cortex 是一个基于 Prometheus 的多租户、高可用的指标系统。它使用分布式数据库（如 Bigtable、DynamoDB）来存储数据，可以实现数据的长期存储和高可用。
+
 ## PromQL
 
 PromQL 是 Prometheus Query Language 的缩写，是 Prometheus 提供的一种强大的数据查询语言。
@@ -12,9 +37,9 @@ PromLens 是一个用于帮助开发者理解和编写 PromQL（Prometheus Query
 
 PromLens 提供了以下功能：
 
-- **查询分析**：PromLens 可以将 PromQL 查询分解成可视化的树形结构，帮助你理解查询的工作原理。
-- **查询优化**：PromLens 可以提供关于如何优化你的 PromQL 查询的建议，以提高查询效率和减少 Prometheus 服务器的负载。
-- **查询构建**：PromLens 提供了一个交互式的查询构建器，可以帮助你构建复杂的 PromQL 查询，无需手动编写查询语句。
+- **查询分析**：PromLens 可以将 PromQL 查询分解成可视化的树形结构，帮助理解查询的工作原理。
+- **查询优化**：PromLens 可以提供关于如何优化的 PromQL 查询的建议，以提高查询效率和减少 Prometheus 服务器的负载。
+- **查询构建**：PromLens 提供了一个交互式的查询构建器，可以帮助构建复杂的 PromQL 查询，无需手动编写查询语句。
 
 请注意，PromLens 是一个商业产品，虽然它提供了一个免费的在线演示版本，但是某些功能可能需要购买许可证才能使用。
 
@@ -26,7 +51,7 @@ Prometheus 的数据模型主要由以下两个部分组成：
 
    指标名称标识了正在测量的系统的总体方面（例如 `http_requests_total`，由给定服务器进程处理的 HTTP 请求的总数）。
 
-   标签允许你将一个指标划分为子维度（例如 `method="GET"` vs `method="POST"` 告诉你处理了每种 HTTP 方法类型的多少请求）。标签可以有不同的来源：例如，一个被监控的目标可能本身就暴露了已经由一组标签分割的指标，或者 Prometheus 服务器可能会将目标标签附加到收集的系列上，以标识它们来自何处。
+   标签允许将一个指标划分为子维度（例如 `method="GET"` vs `method="POST"` 告诉处理了每种 HTTP 方法类型的多少请求）。标签可以有不同的来源：例如，一个被监控的目标可能本身就暴露了已经由一组标签分割的指标，或者 Prometheus 服务器可能会将目标标签附加到收集的系列上，以标识它们来自何处。
 
    形成系列标识符的指标名称和标签在 Prometheus 的 TSDB 中被索引，并用于在查询数据时查找系列。
 
@@ -150,7 +175,7 @@ PromQL 提供了强大的选择操作，可以根据指标名称和标签进行�
    prometheus_http_requests_total
    ```
 
-2. **带标签的选择**：返回具有指定指标和给定标签的所有时间序列。标签选择器允许你通过 `=` 来选择标签值完全等于给定字符串的标签，通过 `!=` 来选择标签值不等于给定字符串的标签，通过 `=~` 来选择标签值符合给定正则表达式的标签，以及通过 `!~` 来选择标签值不符合给定正则表达式的标签。
+2. **带标签的选择**：返回具有指定指标和给定标签的所有时间序列。标签选择器允许通过 `=` 来选择标签值完全等于给定字符串的标签，通过 `!=` 来选择标签值不等于给定字符串的标签，通过 `=~` 来选择标签值符合给定正则表达式的标签，以及通过 `!~` 来选择标签值不符合给定正则表达式的标签。
 
    ```bash
    # 请求处理器为 "/api/v1/query"
@@ -258,10 +283,10 @@ PromQL 提供了强大的选择操作，可以根据指标名称和标签进行�
 # 当 process_open_fds 和 process_max_fds 的标签匹配的时候
 process_open_fds / process_max_fds
 
-# 计算 CPU 的空闲率。首先，我们计算每个 CPU 的空闲时间的速率（忽略 CPU 标签），然后我们计算所有 CPU 的总时间的速率（忽略模式和 CPU 标签）。最后，我们将空闲时间的速率除以总时间的速率，得到 CPU 的空闲率。
+# 计算 CPU 的空闲率。首先，计算每个 CPU 的空闲时间的速率（忽略 CPU 标签），然后计算所有 CPU 的总时间的速率（忽略模式和 CPU 标签）。最后，将空闲时间的速率除以总时间的速率，得到 CPU 的空闲率。
 sum without(cpu)(rate(node_cpu_seconds_total{mode="idle"}[5m])) / ignoring(mode) sum without(mode, cpu)(rate(node_cpu_seconds_total[5m]))
 
-# 计算每个实例的网络带宽使用率。首先，我们计算每个实例的网络发送速率和接收速率，然后我们将这两个速率相加，得到每个实例的总网络带宽使用率。
+# 计算每个实例的网络带宽使用率。首先，计算每个实例的网络发送速率和接收速率，然后将这两个速率相加，得到每个实例的总网络带宽使用率。
 sum without(device)(rate(node_network_transmit_bytes_total[5m])) + on(instance) sum without(device)(rate(node_network_receive_bytes_total[5m]))
 ```
 
@@ -285,7 +310,7 @@ sum without(cpu)(rate(node_cpu_seconds_total[5m])) / ignoring(mode) group_left s
 
 - `irate(v range-vector)`：计算在给定的时间范围内时间序列的即时速率。它适用于更短的时间范围，因为它会反映出短期的波动。
 
-以下是一些真实的示例：
+以下是一些的示例：
 
 ```promql
 # 计算过去 5 分钟内所有实例的 CPU 使用率的平均速率
@@ -295,7 +320,7 @@ rate(node_cpu_seconds_total{mode="user"}[5m])
 irate(node_cpu_seconds_total{mode="user"}[1m])
 ```
 
-在这些示例中，我们首先使用 `rate()` 或 `irate()` 函数来计算每个实例的 CPU 使用率的平均速率或即时速率，然后我们可以使用这些速率来进行进一步的分析或警报。
+在这些示例中，首先使用 `rate()` 或 `irate()` 函数来计算每个实例的 CPU 使用率的平均速率或即时速率，然后可以使用这些速率来进行进一步的分析或警报。
 
 > [!tip] `rate()` 和 `irate()` 的主要区别
 >
@@ -349,7 +374,7 @@ sort(rate(node_cpu_seconds_total{mode="user"}[5m]))
 sort_desc(rate(node_cpu_seconds_total{mode="user"}[5m]))
 ```
 
-在这些示例中，我们首先使用 `rate()` 函数来计算每个实例的 CPU 使用率，然后我们使用 `sort()` 或 `sort_desc()` 函数来对这些使用率进行升序或降序排序。
+在这些示例中，首先使用 `rate()` 函数来计算每个实例的 CPU 使用率，然后使用 `sort()` 或 `sort_desc()` 函数来对这些使用率进行升序或降序排序。
 
 #### `histogram_quantile()`
 
@@ -377,7 +402,7 @@ histogram_quantile(0.9, sum by (le) (rate(http_request_duration_seconds_bucket[1
 histogram_quantile(0.9, sum(rate(http_request_duration_seconds[10m])))
 ```
 
-在这些示例中，我们首先使用 `rate()` 函数来指定分位数计算的时间窗口，然后我们使用 `histogram_quantile()` 函数来计算 φ-分位数。我们还可以使用 `sum by()` 函数来按照特定的标签进行聚合。
+在这些示例中，首先使用 `rate()` 函数来指定分位数计算的时间窗口，然后使用 `histogram_quantile()` 函数来计算 φ-分位数。还可以使用 `sum by()` 函数来按照特定的标签进行聚合。
 
 ### 聚合
 
@@ -520,11 +545,11 @@ Prometheus 配置中的 relabeling 有`relabel_configs`、`metric_relabel_config
 ```yaml
 # 设置或替换标签值
 relabel_configs:
-  - source_labels: [__address__] # 源标签，我们选择 __address__ 这个内置标签
-    separator: ; # 连接源标签值的分隔符，这里我们只有一个源标签，所以这个字段实际上没有用到
-    regex: (.*):.* # 正则表达式，用于匹配源标签值，这里我们提取出地址中的主机名部分（即冒号 : 之前的部分）
-    replacement: $1 # 替换字符串，这里我们使用第一个捕获组（即主机名部分）作为替换字符串
-    target_label: instance # 目标标签，我们将替换字符串设置为 instance 标签的值
+  - source_labels: [__address__] # 源标签，选择 __address__ 这个内置标签
+    separator: ; # 连接源标签值的分隔符，这里只有一个源标签，所以这个字段实际上没有用到
+    regex: (.*):.* # 正则表达式，用于匹配源标签值，这里提取出地址中的主机名部分（即冒号 : 之前的部分）
+    replacement: $1 # 替换字符串，这里使用第一个捕获组（即主机名部分）作为替换字符串
+    target_label: instance # 目标标签，将替换字符串设置为 instance 标签的值
 
 # 设置一个固定的标签值
 relabel_configs:
@@ -538,13 +563,13 @@ relabel_configs:
     replacement: $1:9090
     target_label: __address__
 
-# 保留了所有 __meta_kubernetes_service_annotation_prometheus_io_scrape 标签值为 true 的目标。这样就可以只抓取那些我们想要监控的服务。
+# 保留了所有 __meta_kubernetes_service_annotation_prometheus_io_scrape 标签值为 true 的目标。这样就可以只抓取那些想要监控的服务。
 relabel_configs:
   - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scrape]
     regex: true
     action: keep
 
-# 丢弃了所有 __meta_kubernetes_pod_annotation_prometheus_io_scrape 标签值为 false 的目标。这样就可以避免抓取那些我们不想监控的 Pod。
+# 丢弃了所有 __meta_kubernetes_pod_annotation_prometheus_io_scrape 标签值为 false 的目标。这样就可以避免抓取那些不想监控的 Pod。
 relabel_configs:
   - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
     regex: false
@@ -567,7 +592,7 @@ relabel_configs:
   - regex: __meta_kubernetes_pod_label_(app|version)
     action: labelkeep
 
-# 首先使用 hashmod 操作对 __address__ 标签的值进行哈希，并将结果对 10 取模，然后将结果存储在 __tmp_hash 标签中。接下来，它使用 keep 操作保留 __tmp_hash 标签值为 2 的目标，其他的目标都会被丢弃。这样，你就可以将 Prometheus 的抓取任务分片到多个 Prometheus 实例上，每个实例只抓取一部分目标。
+# 首先使用 hashmod 操作对 __address__ 标签的值进行哈希，并将结果对 10 取模，然后将结果存储在 __tmp_hash 标签中。接下来，它使用 keep 操作保留 __tmp_hash 标签值为 2 的目标，其他的目标都会被丢弃。这样，就可以将 Prometheus 的抓取任务分片到多个 Prometheus 实例上，每个实例只抓取一部分目标。
 relabel_configs:
   - source_labels: [__address__]
     modulus: 10
@@ -578,15 +603,15 @@ relabel_configs:
     regex: 2
 ```
 
-推荐使用 [relabeler 工具](https://relabeler.promlabs.com/) 进行测试。这是一个强大的工具，可以帮助你更好地理解和应用 Relabeling。
+推荐使用 [relabeler 工具](https://relabeler.promlabs.com/) 进行测试。这是一个强大的工具，可以帮助更好地理解和应用 Relabeling。
 
 ## [服务发现](https://prometheus.io/docs/prometheus/latest/configuration/configuration/)
 
-Prometheus 的服务发现（Service Discovery）是其核心功能之一，它允许 Prometheus 自动发现目标系统并开始收集这些系统的指标。这对于动态变化的环境（如 Kubernetes）非常有用，因为你不需要手动更新 Prometheus 的配置来添加或删除目标系统。
+Prometheus 的服务发现（Service Discovery）是其核心功能之一，它允许 Prometheus 自动发现目标系统并开始收集这些系统的指标。这对于动态变化的环境（如 Kubernetes）非常有用，因为不需要手动更新 Prometheus 的配置来添加或删除目标系统。
 
 Prometheus 支持多种服务发现机制，包括：
 
-1. **静态配置**：你可以在 Prometheus 的配置文件中手动指定目标系统的地址。
+1. **静态配置**：可以在 Prometheus 的配置文件中手动指定目标系统的地址。
 2. **文件服务发现**：Prometheus 可以监视指定的 JSON 或 YAML 文件，文件中包含了目标系统的信息。
 3. **Consul**：Prometheus 可以从 Consul 服务发现和配置中心自动发现目标系统。
 4. **DNS SRV 记录**：Prometheus 可以查询 DNS SRV 记录来发现目标系统。
@@ -604,9 +629,9 @@ Prometheus 有多种类型的 Exporter，包括：
 
 1. **官方 Exporter**：Prometheus 团队提供了一些官方的 Exporter，用于监控常见的服务，如 Linux 系统（Node Exporter）、HTTP 服务（Blackbox Exporter）和数据库（如 MySQL Exporter、PostgreSQL Exporter）。
 2. **第三方 Exporter**：社区也提供了许多第三方的 Exporter，用于监控各种不同的服务和应用。
-3. **自定义 Exporter**：如果你需要监控的服务没有现成的 Exporter，你也可以自己编写一个 Exporter。Prometheus 提供了多种语言的客户端库，可以帮助你编写自定义的 Exporter。
+3. **自定义 Exporter**：如果需要监控的服务没有现成的 Exporter，也可以自己编写一个 Exporter。Prometheus 提供了多种语言的客户端库，可以帮助编写自定义的 Exporter。
 
-每个 Exporter 都会运行一个 HTTP 服务器，Prometheus 服务器可以定期从这个 HTTP 服务器上抓取指标。你需要在 Prometheus 的配置文件中指定每个 Exporter 的地址和抓取间隔。
+每个 Exporter 都会运行一个 HTTP 服务器，Prometheus 服务器可以定期从这个 HTTP 服务器上抓取指标。需要在 Prometheus 的配置文件中指定每个 Exporter 的地址和抓取间隔。
 
 ## [Pushgateway](https://prometheus.io/docs/practices/pushing/)
 
@@ -614,10 +639,10 @@ Pushgateway 是 Prometheus 的一个组件，它允许短期的批处理作业�
 
 有两种主要的方式可以推送数据到 Pushgateway：
 
-1. **HTTP API**：Pushgateway 提供了一个 HTTP API，你可以使用任何能发送 HTTP 请求的工具（如 curl）或编程语言（如 Python、Go）来推送数据。
+1. **HTTP API**：Pushgateway 提供了一个 HTTP API，可以使用任何能发送 HTTP 请求的工具（如 curl）或编程语言（如 Python、Go）来推送数据。
 2. **Prometheus 客户端库**：Prometheus 提供了多种语言的客户端库（如 Go、Java、Python），这些客户端库通常包含推送数据到 Pushgateway 的功能。
 
-这两种方式都需要你提供 Pushgateway 的地址和端口，以及你的作业的名称。你还可以提供其他标签来进一步描述你的指标。
+这两种方式都需要提供 Pushgateway 的地址和端口，以及的作业的名称。还可以提供其他标签来进一步描述的指标。
 
 ## [AlertManager](https://prometheus.io/docs/alerting/latest/alertmanager/)
 
@@ -630,7 +655,7 @@ AlertManager 是 Prometheus 监控系统的一部分，负责处理 Prometheus �
 1. **警报生成**：Prometheus 服务器根据定义的警报规则定期评估时间序列数据。如果满足警报条件，Prometheus 服务器将生成警报并发送到 AlertManager。
 2. **警报分组**：AlertManager 根据配置文件中的 `group_by` 参数将接收到的警报分组。这可以减少警报通知的数量，因为同一组的警报将一起发送。
 3. **警报抑制**：AlertManager 根据配置文件中的 `inhibit_rules` 参数抑制某些警报。如果一个警报的源匹配和目标匹配满足抑制规则，那么这个警报将不会发送。
-4. **警报路由**：AlertManager 根据配置文件中的 `route` 参数将警报路由到指定的接收者。你可以根据警报的标签和严重级别定义路由规则。
+4. **警报路由**：AlertManager 根据配置文件中的 `route` 参数将警报路由到指定的接收者。可以根据警报的标签和严重级别定义路由规则。
 5. **警报通知**：AlertManager 将警报通知给指定的接收者。接收者可以是电子邮件、Slack、PagerDuty 等。
 
 以下是 AlertManager 配置文件中的一些关键参数：
@@ -639,7 +664,7 @@ AlertManager 是 Prometheus 监控系统的一部分，负责处理 Prometheus �
 - `group_wait`：定义了在首次发送警报通知之前，AlertManager 应该等待新组的警报多长时间。
 - `group_interval`：定义了如果警报组中至少有一个新的未解决的警报，AlertManager 应该多久发送一次警报通知。
 - `repeat_interval`：定义了如果警报组中没有新的未解决的警报，AlertManager 应该多久发送一次警报通知。
-- `routes`：定义了如何将警报路由到接收者。你可以根据警报的标签和严重级别定义路由规则。
+- `routes`：定义了如何将警报路由到接收者。可以根据警报的标签和严重级别定义路由规则。
 - `receivers`：定义了接收警报通知的接收者。接收者可以是电子邮件、Slack、PagerDuty 等。
 - `inhibit_rules`：定义了哪些警报应该被抑制。如果一个警报的源匹配和目标匹配满足抑制规则，那么这个警报将不会发送。
 
@@ -656,7 +681,7 @@ Recording Rules 分为两种类型：
 1. **Recording Rules**：这种规则会将查询表达式的结果保存为一个新的时间序列。新的时间序列的名称通常由规则的名称决定。
 2. **Alerting Rules**：这种规则会根据查询表达式的结果触发警报。如果表达式的结果满足预定义的条件，Prometheus 就会生成警报并发送到 AlertManager。
 
-你可以在 Prometheus 的配置文件或者单独的规则文件中定义 Recording Rules。如果你在 Prometheus 的配置文件中定义了规则文件的路径，Prometheus 就会自动加载这些规则文件。
+可以在 Prometheus 的配置文件或者单独的规则文件中定义 Recording Rules。如果在 Prometheus 的配置文件中定义了规则文件的路径，Prometheus 就会自动加载这些规则文件。
 
 ## Grafana
 
@@ -664,7 +689,7 @@ Recording Rules 分为两种类型：
 
 ### [添加 Dashboard](https://grafana.com/docs/grafana/latest/dashboards/)
 
-在 "Panel" 页面中，你可以配置你的图表。在 "Query" 部分，你可以输入你的 PromQL 查询。例如，如果你想显示 CPU 使用率，你可以输入以下的 PromQL 查询：
+在 "Panel" 页面中，可以配置的图表。在 "Query" 部分，可以输入的 PromQL 查询。例如，如果想显示 CPU 使用率，可以输入以下的 PromQL 查询：
 
 ```promql
 # CPU使用率
@@ -678,13 +703,13 @@ avg by (instance) ((node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes)
 
 在 Grafana 中添加变量（variables）的步骤如下：
 
-1. 在你的 Dashboard 页面，点击右上角的 "Dashboard settings" 按钮。
+1. 在的 Dashboard 页面，点击右上角的 "Dashboard settings" 按钮。
 
 2. 在 "Dashboard settings" 页面中，点击左侧的 "Variables" 菜单。
 
 3. 在 "Variables" 页面中，点击右上角的 "New Variables" 按钮。
 
-4. 在 "New Variable" 页面中，你可以配置你的变量。以下是一些基本的配置：
+4. 在 "New Variable" 页面中，可以配置的变量。以下是一些基本的配置：
 
    - General -> Name: 输入变量的名称，例如 "host"。
 
@@ -692,15 +717,15 @@ avg by (instance) ((node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes)
 
    - Type: 选择 "Query result"。
 
-   - Data source: 选择你的 Prometheus 数据源。
+   - Data source: 选择的 Prometheus 数据源。
 
-   - Query options -> Query: 输入你的 PromQL 查询来获取 `host` 的值。例如，你可以输入以下的查询：
+   - Query options -> Query: 输入的 PromQL 查询来获取 `host` 的值。例如，可以输入以下的查询：
 
      ```promql
      up{job="node"}
      ```
 
-   - Query options -> Regex: 输入一个正则表达式来从查询结果中提取 `host` 的值。例如，你可以输入以下的正则表达式：
+   - Query options -> Regex: 输入一个正则表达式来从查询结果中提取 `host` 的值。例如，可以输入以下的正则表达式：
 
      ```regex
      .*{instance="(.*?)".*
@@ -710,7 +735,7 @@ avg by (instance) ((node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes)
 
 5. 完成配置后，点击右下角的 "Apply" 按钮。
 
-6. 返回到 Dashboard 页面，你可以在 Dashboard 的顶部看到你的新变量。你可以从下拉菜单中选择一个 `host`，然后你的 Dashboard 会根据你选择的 `host` 更新。
+6. 返回到 Dashboard 页面，可以在 Dashboard 的顶部看到的新变量。可以从下拉菜单中选择一个 `host`，然后的 Dashboard 会根据选择的 `host` 更新。
 
    ```promql
    # CPU使用率
@@ -720,4 +745,120 @@ avg by (instance) ((node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes)
    avg by (instance) ((node_memory_MemTotal_bytes{instance=~"$host"} - node_memory_MemAvailable_bytes{instance=~"$host"}) / node_memory_MemTotal_bytes{instance=~"$host"} * 100)
    ```
 
-## Thanos
+## [存储](https://prometheus.io/docs/prometheus/latest/storage/)
+
+### 本地存储
+
+Prometheus 的本地时间序列数据库在本地存储中以自定义的高效格式存储数据。
+
+磁盘上的布局如下：
+
+1. **数据块**：被摄取的样本被分组成两小时的数据块。每个两小时的数据块由一个目录组成，该目录包含一个 `chunks` 子目录（包含该时间窗口的所有时间序列样本）、一个元数据文件和一个索引文件（将度量名称和标签索引到 `chunks` 目录中的时间序列）。`chunks` 目录中的样本被分组到一个或多个最大为 512MB 的段文件中。当通过 API 删除系列时，删除记录存储在单独的 `tombstones` 文件中（而不是立即从块段中删除数据）。
+
+2. **当前块**：接收的样本的当前块保留在内存中，并且没有完全持久化。它通过可以在 Prometheus 服务器重启时重播的预写日志（WAL）来保护，以防止崩溃。预写日志文件存储在 `wal` 目录中，每个段为 128MB。这些文件包含尚未压缩的原始数据，因此它们比常规的块文件大得多。Prometheus 将保留至少三个预写日志文件。高流量服务器可能会保留超过三个 WAL 文件，以保留至少两小时的原始数据。
+
+3. **数据目录**：Prometheus 服务器的数据目录看起来像这样：
+
+```plaintext
+./data
+├── 01BKGV7JBM69T2G1BGBGM6KB12
+│   └── meta.json
+├── 01BKGTZQ1SYQJTR4PB43C8PD98
+│   ├── chunks
+│   │   └── 000001
+│   ├── tombstones
+│   ├── index
+│   └── meta.json
+├── 01BKGTZQ1HHWHV8FBJXW1Y3W0K
+│   └── meta.json
+├── 01BKGV7JC0RY8A6MACW02A2PJD
+│   ├── chunks
+│   │   └── 000001
+│   ├── tombstones
+│   ├── index
+│   └── meta.json
+├── chunks_head
+│   └── 000001
+└── wal
+    ├── 000000002
+    └── checkpoint.00000001
+        └── 00000000
+```
+
+请注意，本地存储的一个限制是它不是集群的或复制的。因此，它在驱动器或节点故障面前并不是任意可扩展的或持久的，应像管理任何其他单节点数据库一样管理。建议使用 RAID 来提供存储可用性，并推荐使用快照进行备份。通过适当的架构，可以在本地存储中保留多年的数据。
+
+有关文件格式的更多详细信息，可参阅 [TSDB format](https://github.com/prometheus/prometheus/blob/main/tsdb/docs/format/README.md)。
+
+> [!warning]
+>
+> Prometheus 本地存储的文件系统选择的建议。
+>
+> 1. **非 POSIX 兼容的文件系统**：Prometheus 的本地存储不支持非 POSIX 兼容的文件系统，因为可能会发生无法恢复的损坏。
+>
+> 2. **NFS 文件系统**：不支持 NFS 文件系统，包括 AWS 的 EFS。虽然 NFS 可能是 POSIX 兼容的，但大多数实现都不是。
+>
+> 3. **使用本地文件系统**：强烈建议使用本地文件系统以确保可靠性。
+
+### 压缩
+
+压缩是 Prometheus 存储优化的一部分，它在后台将初始的两小时数据块最终压缩成更长的数据块。
+
+压缩过程会创建包含跨度时间更长的数据的更大的数据块。这些数据块的跨度时间最多可以达到保留时间的 10%，或者 31 天，以较小的为准。
+
+这样做的目的是为了提高数据的查询效率和存储效率。因为在一个大的数据块中查找数据，比在多个小的数据块中查找数据要快。同时，通过压缩，可以减少数据的存储空间，提高存储效率。
+
+### OpenMetrics
+
+Prometheus 支持从 OpenMetrics 格式进行回填（Backfilling）。这是因为在某些情况下，可能需要将旧的或历史的指标数据导入到 Prometheus 中。例如，当从其他监控系统迁移到 Prometheus，或者 Prometheus 实例由于某种原因丢失了数据时。
+
+OpenMetrics 是一个开放的指标导出格式，它是 Prometheus 指标导出格式的超集。这意味着任何 Prometheus 指标都可以表示为 OpenMetrics 格式，但 OpenMetrics 还支持一些 Prometheus 不支持的功能。
+
+通过支持从 OpenMetrics 格式进行回填，Prometheus 可以接收和存储更丰富和更复杂的指标数据，这对于那些需要从其他系统迁移数据，或者需要处理复杂指标的用户来说非常有用。
+
+## [联邦（Federation）](https://prometheus.io/docs/prometheus/latest/federation/)
+
+联邦（Federation）允许一个 Prometheus 服务器从另一个 Prometheus 服务器抓取选定的时间序列。
+
+使用案例
+
+- **层次化联邦（Hierarchical federation）**：层次化联邦允许 Prometheus 扩展到具有数十个数据中心和数百万节点的环境。在这种使用案例中，联邦拓扑类似于树，高级别的 Prometheus 服务器从大量的下级服务器收集聚合的时间序列数据。
+
+  例如，一个设置可能包括许多每个数据中心的 Prometheus 服务器，它们以高细节（实例级别的深入）收集数据，以及一组全局 Prometheus 服务器，它们只从这些本地服务器收集和存储聚合数据（作业级别的深入）。这提供了一个聚合的全局视图和详细的本地视图。
+
+- **跨服务联邦（Cross-service federation）**：在跨服务联邦中，一个服务的 Prometheus 服务器被配置为从另一个服务的 Prometheus 服务器抓取选定的数据，以便在单个服务器内对两个数据集进行警报和查询。
+
+  例如，运行多个服务的集群调度器可能会公开关于在集群上运行的服务实例的资源使用信息（如内存和 CPU 使用情况）。另一方面，在该集群上运行的服务只会公开特定于应用的服务指标。通常，这两组指标由单独的 Prometheus 服务器抓取。使用联邦，包含服务级别指标的 Prometheus 服务器可能会从集群 Prometheus 中拉取关于其特定服务的集群资源使用指标，以便在该服务器内使用这两组指标。
+
+## [Thanos](https://thanos.io/)
+
+### [架构](https://thanos.io/tip/thanos/quick-tutorial.md/)
+
+以下是 Thanos 各个组件介绍：
+
+1. **Sidecar**：Sidecar 是部署在 Prometheus 实例旁边的一个组件，它有两个主要功能。第一，它通过 gRPC 提供了一个接口，使得 Thanos Querier 可以访问 Prometheus 实例的数据。第二，它可以将 Prometheus 实例的数据上传到云存储，以实现数据的长期存储。
+
+2. **Store Gateway**：Store Gateway 是一个服务，它可以访问云存储桶中的数据，并通过 gRPC 提供这些数据给 Thanos Querier。Store Gateway 也负责处理数据的索引，以加速查询。
+
+3. **Compactor**：Compactor 是一个后台服务，它负责处理云存储桶中的数据。Compactor 的主要任务包括压缩数据（以减少存储空间的使用）、降采样数据（以加速长时间范围的查询）和应用数据保留策略。
+
+4. **Receiver**：Receiver 是一个服务，它可以接收 Prometheus 的远程写入数据。Receiver 将这些数据暴露给 Thanos Querier，并可以选择将这些数据上传到云存储。Receiver 可以用于实现 Prometheus 的高可用或扩展 Prometheus 的写入能力。
+
+5. **Ruler/Rule**：Ruler 或 Rule 是一个服务，它可以评估 Prometheus 的记录和警报规则。Ruler 可以将计算结果暴露给 Thanos Querier，并可以选择将结果上传到云存储。Ruler 允许在一个地方管理所有的规则，而不需要在每个 Prometheus 实例上单独管理规则。
+
+6. **Querier/Query**：Querier 或 Query 是一个服务，它实现了 Prometheus 的 v1 API。Querier 可以从 Sidecar、Store Gateway、Receiver 和 Ruler 获取数据，然后聚合这些数据并返回给用户。Querier 允许查询所有的数据，无论这些数据是在 Prometheus 实例中，还是在云存储中。
+
+7. **Query Frontend**：Query Frontend 是一个服务，它实现了 Prometheus 的 v1 API，并将请求代理到 Querier。Query Frontend 可以缓存 Querier 的响应，以加速重复的查询。Query Frontend 还可以将大查询拆分为多个小查询，以并行处理这些查询并减少查询时间。
+
+Thanos 的部署模式包括：
+
+1. **使用 Thanos Sidecar 的 Kubernetes 部署**：在这种部署模式下，每个 Prometheus 实例旁边都会部署一个 Thanos Sidecar。Thanos Sidecar 有两个主要职责：
+
+   - **数据上传**：Thanos Sidecar 会定期将 Prometheus 实例的数据上传到云存储（如 Amazon S3、Google Cloud Storage 等）。这样，即使 Prometheus 实例的本地存储被清理，仍然可以从云存储中查询到旧的数据。
+
+   - **数据查询**：Thanos Sidecar 提供了一个 gRPC 接口，Thanos Querier 可以通过这个接口查询 Prometheus 实例的数据。这意味着可以使用 Thanos Querier 查询所有 Prometheus 实例的数据，而不需要直接访问每个 Prometheus 实例。
+
+2. **通过 Receive 进行部署以扩展或与其他远程写入兼容的源集成**：在这种部署模式下，Thanos Receiver 接收 Prometheus 的远程写入数据，然后将数据公开给 Thanos Querier 或上传到云存储。这种部署模式有两个主要用途：
+
+   - **扩展 Prometheus**：如果的 Prometheus 实例无法处理大量的写入负载，可以使用 Thanos Receiver 来扩展 Prometheus 的写入能力。可以将 Prometheus 的远程写入数据发送到 Thanos Receiver，然后 Thanos Receiver 会将这些数据存储在本地或上传到云存储。
+
+   - **集成其他源**：如果有其他的远程写入兼容的数据源（如 Grafana Loki、OpenTelemetry Collector 等），可以使用 Thanos Receiver 来集成这些数据源。可以将这些数据源的数据发送到 Thanos Receiver，然后 Thanos Receiver 会将这些数据存储在本地或上传到云存储。
