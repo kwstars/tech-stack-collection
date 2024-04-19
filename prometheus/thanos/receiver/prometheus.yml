@@ -1,0 +1,30 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+alerting:
+  alert_relabel_configs:
+    - regex: replica
+      action: labeldrop
+  alertmanagers:
+    - scheme: http
+      path_prefix: /
+      static_configs:
+        - targets: ["alertmanager:9093"]
+
+rule_files:
+  - /etc/prometheus/rules/*rules.yml
+
+scrape_configs:
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: "node_exporter"
+    static_configs:
+      - targets: ["node_exporter:9100"]
+
+remote_write:
+  - url: http://thanos-receive3:10908/api/v1/receive
+    headers: # 当多租户时，需要添加租户信息
+      THANOS-TENANT: thanos

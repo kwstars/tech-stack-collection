@@ -1,0 +1,147 @@
+services:
+  minio:
+    image: quay.io/minio/minio:latest
+    command: server --console-address ":9001" /data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - minio_data:/data
+
+  thanos-receive1:
+    image: thanosio/thanos:v0.34.1
+    user: root
+    command:
+      - "receive"
+      - "--tsdb.path=/var/thanos/receiver"
+      - "--receive.replication-factor=1" # 表示每个写入请求只会被复制到一个 Thanos Receive 实例。这意味着没有额外的副本，如果这个实例发生故障，那么这个写入请求的数据可能会丢失。
+      - '--label=receive_replica="1"' # 用于标识副本
+      - '--label=receive_cluster="eu1"' # 用于标识集群
+      - "--receive.local-endpoint=127.0.0.1:10907" # 表示本地节点的端点是 127.0.0.1:10907。这意味着这个节点将处理写入请求，并且在 hashring 配置中可以被识别为 127.0.0.1:10907。
+      - "--receive.hashrings-file=/data/hashring.json" # 指定包含 hashring 配置的文件的路径。Hashring 是一种数据结构，用于在 Thanos Receive 的多个实例之间分配写入请求。
+      - "--remote-write.address=0.0.0.0:10908" # 用于接收 Prometheus 的远程写入请求
+      - "--objstore.config-file=/bucket.yml" # 用于上传数据到 Minio
+    volumes:
+      - /tmp/thanos/receiver1:/var/thanos/receiver
+      - ./hashring.json:/data/hashring.json
+      - ./bucket.yml:/bucket.yml
+
+  thanos-receive2:
+    image: thanosio/thanos:v0.34.1
+    user: root
+    command:
+      - "receive"
+      - "--tsdb.path=/var/thanos/receiver"
+      - "--receive.replication-factor=1"
+      - '--label=receive_replica="2"' # 用于标识副本
+      - '--label=receive_cluster="eu1"'
+      - "--receive.local-endpoint=127.0.0.1:11907" # 用于标识集群
+      - "--receive.hashrings-file=/data/hashring.json"
+      - "--remote-write.address=0.0.0.0:10908"
+      - "--objstore.config-file=/bucket.yml"
+    volumes:
+      - /tmp/thanos/receiver2:/var/thanos/receiver
+      - ./hashring.json:/data/hashring.json
+      - ./bucket.yml:/bucket.yml
+
+  thanos-receive3:
+    image: thanosio/thanos:v0.34.1
+    user: root
+    command:
+      - "receive"
+      - "--tsdb.path=/var/thanos/receiver"
+      - "--receive.replication-factor=1"
+      - '--label=receive_replica="3"'
+      - '--label=receive_cluster="eu1"'
+      - "--receive.local-endpoint=127.0.0.1:12907"
+      - "--receive.hashrings-file=/data/hashring.json"
+      - "--remote-write.address=0.0.0.0:10908"
+      - "--objstore.config-file=/bucket.yml"
+    volumes:
+      - /tmp/thanos/receiver3:/var/thanos/receiver
+      - ./hashring.json:/data/hashring.json
+      - ./bucket.yml:/bucket.yml
+
+  thanos-querier:
+    image: thanosio/thanos:v0.34.1
+    command:
+      - "query"
+      - "--grpc-address=0.0.0.0:10901"
+      - "--http-address=0.0.0.0:10902"
+      - "--query.replica-label=receive_replica" # 对应 receive 的 --label=receive_replica
+      # querier 可以查询 sidecar 的数据，也可以查询 store 的数据
+      - "--endpoint=thanos-receive3:10901"
+      - "--endpoint=thanos-receive2:10901"
+      - "--endpoint=thanos-receive1:10901"
+    ports:
+      - 10901:10901 #grpc
+      - 10902:10902 #http
+    depends_on:
+      - thanos-receive1
+      - thanos-receive2
+      - thanos-receive3
+
+  prometheus:
+    image: prom/prometheus:v2.45.4
+    user: root
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml" # 指定配置文件
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries" # 指定控制台库目录
+      - "--web.console.templates=/usr/share/prometheus/consoles" # 指定控制台模板目录
+      # https://prometheus.io/docs/prometheus/latest/storage/#operational-aspects
+      - "--storage.tsdb.path=/prometheus" # 指定tsdb数据路径
+      - "--storage.tsdb.retention.time=24h" # 数据保留时间, 默认15d
+      - "--storage.tsdb.retention.size=0" # 数据保留大小, 默认0
+      - "--storage.tsdb.wal-compression" # 启用WAL日志压缩
+      - "--storage.tsdb.min-block-duration=2h" # 设置为2小时
+      - "--storage.tsdb.max-block-duration=2h" # 设置为2小时
+      # https://prometheus.io/docs/operating/security/#prometheus
+      - "--web.enable-admin-api" # 控制对admin HTTP API的访问，其中包括删除时间序列等功能
+      - "--web.enable-lifecycle" # 支持热更新，直接执行localhost:9090/-/reload立即生效
+      - "--log.level=debug" # 启用调试日志
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./rules:/etc/prometheus/rules
+      - prometheus_data:/prometheus
+    ports:
+      - 9090:9090
+
+  node_exporter:
+    image: quay.io/prometheus/node-exporter:v1.7.0
+    pid: host
+    # network_mode: host
+    ipc: host
+    restart: unless-stopped # 确保在容器退出或者 Docker 重启后，容器能够自动重启
+    security_opt:
+      - no-new-privileges:true # 防止容器进程获取新的权限
+    read_only: true # 将容器文件系统设置为只读，以增加安全性
+    volumes:
+      - "/proc:/host/proc:ro"
+      - "/sys:/host/sys:ro"
+      - "/:/rootfs:ro"
+      - "/var/lib/node_exporter/textfile_collector/shadow.prom:/data/textfile_collector/shadow.prom:ro"
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--path.rootfs=/rootfs"
+      - "--collector.textfile.directory=/data/textfile_collector" # 指定 textfile collector 的目录
+    # ports:
+    #   - 9100:9100
+
+volumes:
+  minio_data:
+  prometheus_data:
+
+networks:
+  default:
+    name: monitoring
+    driver: bridge
+    external: true

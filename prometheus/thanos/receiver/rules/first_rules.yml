@@ -1,0 +1,25 @@
+groups:
+  - name: test-recording-rule
+    rules:
+      - record: code:prometheus_http_requests_total:sum
+        expr: sum by (code) (prometheus_http_requests_total)
+  - name: test-node-mem
+    rules:
+      - alert: NodeMemoryUsage
+        expr: (node_memory_MemTotal_bytes - (node_memory_MemFree_bytes + node_memory_Buffers_bytes + node_memory_Cached_bytes)) / node_memory_MemTotal_bytes * 100 > 20
+        for: 1m
+        labels:
+          team: node
+        annotations:
+          summary: "{{$labels.instance}}: High Memory usage detected"
+          description: "{{$labels.instance}}: Memory usage is above 20% (current value is: {{ $value }})"
+  - name: node-down
+    rules:
+      - alert: NodeDown
+        expr: up{job="node"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Node {{ $labels.instance }} down"
+          description: "Node {{ $labels.instance }} of job {{ $labels.job }} has been down for more than 1 minute."

@@ -862,3 +862,52 @@ Thanos 的部署模式包括：
    - **扩展 Prometheus**：如果的 Prometheus 实例无法处理大量的写入负载，可以使用 Thanos Receiver 来扩展 Prometheus 的写入能力。可以将 Prometheus 的远程写入数据发送到 Thanos Receiver，然后 Thanos Receiver 会将这些数据存储在本地或上传到云存储。
 
    - **集成其他源**：如果有其他的远程写入兼容的数据源（如 Grafana Loki、OpenTelemetry Collector 等），可以使用 Thanos Receiver 来集成这些数据源。可以将这些数据源的数据发送到 Thanos Receiver，然后 Thanos Receiver 会将这些数据存储在本地或上传到云存储。
+
+### Receiver
+
+#### `--receive.hashrings-file`
+
+`--receive.hashrings-file` 是 Thanos Receive 的一个启动参数，它指定了一个包含 hashring 配置的 JSON 文件的路径。
+
+Hashring 是一种数据结构，用于在 Thanos Receive 的多个实例之间分配写入请求。每个请求都会被分配给 hashring 中的一个节点，这样可以确保数据的一致性和高可用性。
+
+`--receive.hashrings-file` 文件的内容是一个 JSON 数组，每个元素都是一个 hashring 配置。每个配置都包含两个字段：
+
+- `"endpoints"`：这个字段是一个字符串数组，包含了这个 hashring 中的所有 Thanos Receive 实例的地址。
+- `"tenants"`：这个字段是一个字符串数组，包含了这个 hashring 中的所有租户 ID。租户 ID 是用来区分不同的用户或者团队的。
+
+例如，下面是 3 个 `hashrings.json` 文件的示例：
+
+```json
+// 它将处理所有的写入请求，不论它们来自哪个租户
+[
+  {
+    "endpoints": [
+      "127.0.0.1:10907",
+      "127.0.0.1:11907",
+      "127.0.0.1:12907"
+    ]
+  }
+]
+
+// 服务于两个租户，分别是 "tenant1" 和 "tenant2"
+[
+  {
+    "endpoints": ["127.0.0.1:10907", "127.0.0.2:10907", "127.0.0.3:10907"],
+    "tenants": ["tenant1", "tenant2"]
+  }
+]
+
+// 它会处理所有租户 ID 以 "foo" 开头的写入请求
+[
+  {
+    "tenants": ["foo*"],
+    "tenant_matcher_type": "glob",
+    "endpoints": [
+      "127.0.0.1:1234",
+      "127.0.0.1:12345",
+      "127.0.0.1:1235"
+    ]
+  }
+]
+```
