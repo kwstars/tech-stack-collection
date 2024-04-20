@@ -1,4 +1,4 @@
-K3S_VERSION := v1.29.3+k3s1
+K3S_VERSION = "v1.28.8+k3s1"
 
 SUDO := $(if $(shell id -u),sudo,)
 
@@ -19,16 +19,14 @@ move-binary:
 
 # 请将<node-ip>, <advertise-address>, <tls-san> 替换为节点的IP
 # 如果网络问题可以配置代理: https://docs.k3s.io/advanced#configuring-an-http-proxy
+# token: /var/lib/rancher/k3s/server/node-token    https://docs.k3s.io/cli/token?_highlight=token#server
+# kubeconfig: /etc/rancher/k3s/k3s.yaml    https://docs.k3s.io/cluster-access
 install-server-node: move-images move-binary
-	export INSTALL_K3S_EXEC="server --write-kubeconfig ~/.kube/config --node-ip 10.0.0.132 --advertise-address 10.0.0.132 --tls-san 10.0.0.132 --default-local-storage-path /data/local-storage"
-	export INSTALL_K3S_SKIP_DOWNLOAD=true
-	bash ./install.sh
+	INSTALL_K3S_EXEC="server --write-kubeconfig ~/.kube/config --disable=traefik --node-ip 10.0.0.132 --advertise-address 10.0.0.132 --default-local-storage-path /data/local-storage" INSTALL_K3S_SKIP_DOWNLOAD=true INSTALL_K3S_VERSION=$(K3S_VERSION) bash ./install.sh
 
 # 请将<token>替换为主节点的token，<主节点IP>替换为主节点的IP
 install-agent-node: move-images move-binary
-	export INSTALL_K3S_EXEC="agent --token <token> --server https://<主节点IP>:6443 --node-label k3s.io/hostname=$(shell hostname)"
-	export INSTALL_K3S_SKIP_DOWNLOAD=true
-	bash ./install.sh
+	INSTALL_K3S_EXEC="agent --token <token> --server https://<主节点IP>:6443 --node-label k3s.io/hostname=$(shell hostname)" INSTALL_K3S_SKIP_DOWNLOAD=true INSTALL_K3S_VERSION=$(K3S_VERSION) bash ./install.sh
 
 uninstall-server-node:
 	$(SUDO) /usr/local/bin/k3s-uninstall.sh
