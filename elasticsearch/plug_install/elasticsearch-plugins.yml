@@ -1,0 +1,7 @@
+# https://www.elastic.co/guide/en/elasticsearch/plugins/7.17/manage-plugins-using-configuration-file.html
+plugins:
+  - id: analysis-icu # 官方插件只需要id
+  - id: repository-azure
+  # - id: custom-mapper # 非官方需要提供地址
+  #   location: https://example.com/archive/custom-mapper-1.0.0.zip
+# proxy: proxy.example.com:8443 # 可配置 http 代理
