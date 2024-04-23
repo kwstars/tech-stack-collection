@@ -1,7 +1,174 @@
-在 Elasticsearch 中，更新（Update）操作主要有以下几种方式：
+## 更新文档
 
-1. `Update API`：Update API 允许你更新现有文档的部分内容。详细信息可以在 Elasticsearch 官方文档中找到：[Update API](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-update.html)
+```json
+DELETE movies
 
-2. `Bulk API`：Bulk API 允许在单个请求中执行多个索引/更新/删除操作，这可以大大提高更新速度。详细信息可以在 Elasticsearch 官方文档中找到：[Bulk API](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html)
+# 创建索引
+PUT movies/_doc/1
+{
+  "title":"The Godfather",
+  "synopsis":"The aging patriarch of an organized crime dynasty transfers control of his clandestine empire to his reluctant son"
+}
 
-3. `Update By Query API`：Update By Query API 允许你更新满足查询条件的所有文档。详细信息可以在 Elasticsearch 官方文档中找到：[Update By Query API](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-update-by-query.html)
+# 添加新的字段
+POST movies/_update/1
+{
+  "doc": {
+    "actors":["Marlon Brando","Al Pacino","James Caan"],
+    "director":"Francis Ford Coppola"
+  }
+}
+
+# 修改已经存在的文档
+POST movies/_update/1
+{
+  "doc": {
+    "title":"The Godfather (Original)"
+  }
+}
+
+GET movies/_doc/1
+```
+
+## 脚本更新
+
+```json
+# 添加一个演员
+POST movies/_update/1
+{
+  "script": {
+    "source": "ctx._source.actors.add('Diane Keaton')"
+  }
+}
+
+GET movies/_doc/1
+
+# 删除一个演员
+POST movies/_update/1
+{
+  "script": {
+    "source": "ctx._source.actors.remove(ctx._source.actors.indexOf('Diane Keaton'))"
+  }
+}
+
+# 添加一个新的字段
+POST movies/_update/1
+{
+  "script": {
+    "source": "ctx._source.imdb_user_rating = 9.2"
+  }
+}
+
+# 删除一个字段
+POST movies/_update/1
+{
+  "script": {
+    "source": "ctx._source.remove('metacritic_rating')"
+  }
+}
+
+# 添加多个字段
+POST movies/_update/1
+{
+  "script": {
+    "source": """
+    ctx._source.runtime_in_minutes = 175;
+    ctx._source.metacritic_rating= 100;
+    ctx._source.tomatometer = 97;
+    ctx._source.boxoffice_gross_in_millions = 134.8;
+    """
+  }
+}
+
+# 条件更新
+POST movies/_update/1
+{
+  "script": {
+    "source": """
+    if(ctx._source.boxoffice_gross_in_millions > 125)
+      {ctx._source.blockbuster = true}
+     else
+      {ctx._source.blockbuster = false}
+    """
+  }
+}
+
+# 通过参数传递
+POST movies/_update/1
+{
+  "script": {
+    "source": """
+ if(ctx._source.boxoffice_gross_in_millions > params.gross_earnings_threshold)
+   {ctx._source.blockbuster = true}
+ else
+   {ctx._source.blockbuster = false}
+ """,
+    "params": {
+      "gross_earnings_threshold":150
+    }
+  }
+}
+```
+
+## 替换文档
+
+```json
+PUT movies/_doc/1
+{
+  "title":"Avatar"
+}
+```
+
+## Upserts
+
+```json
+# 如果文档不存在则插入
+POST movies/_update/5
+{
+  "script": {
+    "source": "ctx._source.gross_earnings = '357.1m'"
+  },
+  "upsert": {
+    "title":"Top Gun",
+    "gross_earnings":"357.5m"
+  }
+}
+
+# `_update` 一个不存在的文档会报错
+POST movies/_update/11
+{
+  "doc": {
+    "runtime_in_minutes":110
+  }
+}
+
+# 如果文档不存在则插入
+POST movies/_update/11
+{
+  "doc": {
+    "runtime_in_minutes":110
+  },
+  "doc_as_upsert":true
+}
+```
+
+## 通过查询更新
+
+```json
+POST movies/_update_by_query
+{
+  "query": {
+    "match": {
+      "actors": "Al Pacino"
+    }
+  },
+
+  "script": {
+    "source": """
+    ctx._source.actors.add('Oscar Winner Al Pacino');
+    ctx._source.actors.remove(ctx._source.actors.indexOf('Al Pacino'))
+    """,
+    "lang": "painless"
+  }
+}
+```

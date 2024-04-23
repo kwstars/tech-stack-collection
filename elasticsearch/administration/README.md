@@ -1,4 +1,4 @@
-## 重建索引
+## Reindexing documents
 
 在 Elasticsearch 中，以下是一些可能需要重建索引的情况：
 

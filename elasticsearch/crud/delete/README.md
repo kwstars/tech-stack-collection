@@ -1,7 +1,118 @@
-在 Elasticsearch 中，删除（Delete）操作主要有以下几种方式：
+## 指定 ID 删除文档
 
-1. `Delete API`：Delete API 用于删除指定 ID 的文档。详细信息可以在 Elasticsearch 官方文档中找到：[Delete API](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-delete.html)
+```json
+### Deleting a document given an ID
+DELETE movies/_doc/1
+```
 
-2. `Delete By Query API`：Delete By Query API 允许你删除满足查询条件的所有文档。详细信息可以在 Elasticsearch 官方文档中找到：[Delete By Query API](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-delete-by-query.html)
+## 查询删除
 
-3. `Bulk API`：Bulk API 允许在单个请求中执行多个索引/删除操作，这可以大大提高删除速度。详细信息可以在 Elasticsearch 官方文档中找到：[Bulk API](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html)
+```json
+PUT movies/_doc/101
+{
+  "title":"Jaws",
+  "director":"Steven Spielberg",
+  "gross_earnings_in_millions":355
+}
+
+PUT movies/_doc/102
+{
+  "title":"Jaws II",
+  "director":"Steven Spielberg",
+  "gross_earnings_in_millions":375
+}
+
+PUT movies/_doc/103
+{
+  "title":"Jaws III",
+  "director":"Steven Spielberg",
+  "gross_earnings_in_millions":300
+}
+
+# 查询删除
+POST movies/_delete_by_query
+{
+  "query": {
+    "match": {
+      "director": "James Cameron"
+    }
+  }
+}
+
+POST movies/_delete_by_query
+{
+  "query": {
+    "range": {
+      "gross_earnings_in_millions": {
+        "gt": 350,
+        "lt": 400
+      }
+    }
+  }
+}
+
+# 不存在
+GET movies/_doc/101
+
+# 不存在
+GET movies/_doc/102
+
+# 存在
+GET movies/_doc/103
+```
+
+```json
+## Complex delete query
+POST movies/_delete_by_query
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "director": "Steven Spielberg"
+          }
+        }
+      ],
+      "must_not": [
+        {
+          "range": {
+            "imdb_rating": {
+              "gte": 9,
+              "lte": 9.5
+            }
+          }
+        }
+      ],
+      "filter": [
+        {
+          "range": {
+            "gross_earnings_in_millions": {
+              "lt": 100
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+## 删除所有文档
+
+```json
+POST movies/_delete_by_query
+{
+  "query": {
+    "match_all": {}
+  }
+}
+
+# 删除多个索引的文档
+POST <index_1>,<index_2>,<index_3>/_delete_by_query
+{
+  "query": {
+    "match_all": {}
+  }
+}
+```

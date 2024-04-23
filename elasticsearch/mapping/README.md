@@ -1,4 +1,6 @@
-## `object` 类型
+## 数据类型
+
+### `object` 类型
 
 ```json
 DELETE emails
@@ -88,7 +90,7 @@ GET emails/_search
 }
 ```
 
-## `nested` 类型
+### `nested` 类型
 
 `nested` 类型就是解决上面 `object` 类型的问题，`nested` 类型可以保持数组中每个对象的独立性，从而可以正确处理数组中的多个对象。
 
@@ -181,7 +183,7 @@ POST my_movies/_search
 }
 ```
 
-## `flattended` 类型
+### `flattended` 类型
 
 ```json
 PUT consultations
@@ -282,7 +284,7 @@ POST bug_reports/_search
 }
 ```
 
-## `join` 类型
+### `join` 类型
 
 ```json
 # 定义了一个名为 doctors 的索引，doctor 和 patient 是父子关系，doctor 是父文档，patient 是子文档。
@@ -344,3 +346,33 @@ GET doctors/_search
 
 > [!note]
 > 在 Elasticsearch 中实现父子关系会对性能产生影响。如果你正在考虑文档关系，Elasticsearch 可能并不是合适的工具，所以请谨慎使用这个功能。
+
+## 映射参数
+
+### `dynamic` 参数
+
+请注意，虽然 Dynamic Mapping 可以方便快速地创建索引，但在生产环境中，最佳实践通常是预先定义好映射，以便更精确地控制字段的类型和行为。
+
+以下是以二维表的方式展示 Dynamic Mappings 的控制:
+
+| 动作/设置      | "true" | "false" | "strict" |
+| -------------- | ------ | ------- | -------- |
+| 文档可被索引   | YES    | YES     | NO       |
+| 字段可被索引   | YES    | NO      | NO       |
+| Mapping 被更新 | YES    | NO      | NO       |
+
+- 当 dynamic 被设置为 "false" 时，如果有新增字段的数据写入，该数据可以被索引，但新增字段会被丢弃。
+- 当设置为 "strict" 模式时，数据写入会直接出错。
+
+以下是设置 dynamic 为 "false" 的示例:
+
+```bash
+PUT movies
+{
+  "mappings": {
+    "_doc": {
+      "dynamic": "false"
+    }
+  }
+}
+```

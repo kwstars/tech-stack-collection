@@ -104,12 +104,11 @@ Posting List
 
 ## [Mapping](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping.html)
 
-以下是 Mapping 的一些知识点:
-
-1. 映射（Mapping）在 Elasticsearch 中起着关键的作用，它定义了如何存储和检索文档。
-2. 映射支持多字段（multi-fields），这意味着可以在同一字段上定义多种数据类型。
-3. 映射还包括元数据字段，这些字段用于处理文档的相关元数据。
-4. Elasticsearch 提供了动态映射和显式映射两种方式来定义数据。
+1. **文档和字段**：每个文档由具有值的字段组成，每个字段都有一个数据类型。Elasticsearch 提供了丰富的数据类型来表示这些值。
+2. **映射规则**：有动态（dynamic mapping）或显式（explicit mapping）映射。
+3. **映射机制**：映射是一种预先创建字段模式定义的机制。Elasticsearch 在索引文档时会参考这些模式定义，以便数据被分析和存储，以便更快地检索。
+4. **动态映射（dynamic mapping）**：虽然动态映射很方便，特别是在开发中，但如果我们对数据模型了解得更多，最好是预先创建映射（explicit mapping）。
+5. **数据类型**：Elasticsearch 提供了广泛的数据类型，包括文本、布尔值、数值、日期等，甚至还有复杂的字段，如 joins、completion、geopoints、nested 等。
 
 ### 多字段（multi-fields）
 
@@ -244,49 +243,6 @@ Elasticsearch 的数据类型大致可以分为精确值（exact values）和全
 - `subobjects`: 允许定义嵌套的对象字段，这对于存储和查询结构化数据非常有用。
 - `store`: 决定是否应在磁盘上为字段存储单独的值，这对于某些类型的查询非常有用，但会增加磁盘使用。
 - `term_vector`: 决定是否应存储字段的词项向量，这对于某些类型的全文搜索功能非常有用，如快速高亮或更复杂的文本分析。
-
-### [动态映射（Dynamic Mapping）](https://www.elastic.co/guide/en/elasticsearch/reference/current/dynamic-mapping.html#dynamic-mapping)
-
-Elasticsearch 的 Dynamic Mapping 是其自动推断和创建字段类型的功能。当 Elasticsearch 接收到一个未知字段时，Dynamic Mapping 会根据字段的内容自动决定字段类型。
-
-以下是一些基本规则:
-
-- JSON 布尔值会被映射为 `boolean` 类型。
-- 浮点数会被映射为 `float` 类型。
-- 整数会被映射为 `long` 类型。
-- 对象会被映射为 `object` 类型，并且其属性会被递归映射。
-- 数组会被映射为对应元素类型的数组。如果数组元素有多种类型，会选择一种最兼容的类型。
-- 字符串类型的处理较为复杂，Elasticsearch 会检查其是否符合日期或时间格式，如果符合则映射为 `date` 类型，否则映射为 `text` 类型并附加一个 `keyword` 类型的字段用于排序和聚合。
-
-请注意，虽然 Dynamic Mapping 可以方便快速地创建索引，但在生产环境中，最佳实践通常是预先定义好映射，以便更精确地控制字段的类型和行为。
-
-以下是以二维表的方式展示 Dynamic Mappings 的控制:
-
-| 动作/设置      | "true" | "false" | "strict" |
-| -------------- | ------ | ------- | -------- |
-| 文档可被索引   | YES    | YES     | NO       |
-| 字段可被索引   | YES    | NO      | NO       |
-| Mapping 被更新 | YES    | NO      | NO       |
-
-- 当 dynamic 被设置为 "false" 时，如果有新增字段的数据写入，该数据可以被索引，但新增字段会被丢弃。
-- 当设置为 "strict" 模式时，数据写入会直接出错。
-
-以下是设置 dynamic 为 "false" 的示例:
-
-```bash
-PUT movies
-{
-  "mappings": {
-    "_doc": {
-      "dynamic": "false"
-    }
-  }
-}
-```
-
-控制当前字段是否被索引
-
-### 显式的映射（Explicit Mapping）
 
 ## [文本分析（Text analysis）](https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis.html)
 
