@@ -23,7 +23,7 @@ services:
     container_name: kibana
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200 # 设置elasticsearch地址
-      - I18N_LOCALE=zh-CN # 设置语言
+      # - I18N_LOCALE=zh-CN # 设置语言
       - csp.strict=false # 关闭安全策略
     # volumes:
     #   - ./kibana.yml:/usr/share/kibana/config/kibana.yml

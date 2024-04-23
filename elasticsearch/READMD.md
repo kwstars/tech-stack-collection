@@ -1,10 +1,3 @@
-## 部署架构
-
-https://www.elastic.co/use-cases/
-https://www.elastic.co/blog/a-heap-of-trouble
-
-https://www.elastic.co/blog/every-shard-deserves-a-home
-
 ## 基本概念
 
 ### 逻辑概念
@@ -121,8 +114,9 @@ Posting List
 
 ### 多字段（multi-fields）
 
+单 field 索引
+
 ```json
-// 单 field
 PUT /my-index-000001
 {
   "mappings": {
@@ -133,8 +127,11 @@ PUT /my-index-000001
     }
   }
 }
+```
 
-// 多 field
+多 field 索引
+
+```json
 PUT my-index-000001
 {
   "mappings": {
@@ -143,7 +140,7 @@ PUT my-index-000001
         "type": "text",
         "fields": {
           "raw": {
-            "type":  "keyword"
+            "type": "keyword"
           }
         }
       }
@@ -190,10 +187,10 @@ Elasticsearch 的数据类型大致可以分为精确值（exact values）和全
     - `date`: 日期字段用于存储日期和时间信息。日期字段可以包含日期、时间或日期和时间的组合。日期字段可以存储日期和时间信息，如“2015-01-01”、“2015-01-01T12:10:30”或“2015-01-01T12:10:30+01:00”。
     - `date_nanos`: 日期字段的变体，精确到纳秒。
   - `alias`: alias 类型是一种特殊的关键字字段，用于将一个或多个字段的值合并到一个字段中。
-  - `object`: 这是一个 JSON 对象。它将每个子字段作为独立的字段进行索引，这意味着可以对每个子字段进行单独的查询和聚合，但不能保留字段之间的关系。例如，如果正在索引用户数据，每个用户可能有一个名为 address 的 object 字段，该字段包含 street，city 和 postcode 等子字段。这样，就可以在单个文档中存储和查询用户的地址信息。
-  - `flattended`: 这是一个将整个 JSON 对象作为单个字段值的类型。它不会为每个子字段创建单独的索引，而是将整个对象作为一个整体进行索引。这使得可以对对象的内容进行简单的搜索和聚合，但不能对单个子字段进行查询或聚合。。例如，如果正在处理日志数据，其中每条日志都包含大量的元数据，这些元数据的键可能会频繁变化。在这种情况下，使用 flattened 类型可以有效地防止由于过多的字段映射而导致的映射爆炸，同时仍然允许对元数据进行基本的关键字搜索和聚合。
-  - `nested`: 这是一个保留其子字段之间关系的 JSON 对象。它将每个子对象作为独立的文档进行索引，这使得可以对每个子对象进行独立的查询和聚合，同时保留子对象之间的关系。例如，如果正在索引电子商务网站的产品数据，每个产品可能都有一组评论。每个评论都可以作为一个 nested 对象，包含 author，text 和 rating 等字段。这样，就可以独立地查询和过滤每个产品的评论，例如查找所有由特定作者写的评论，或者查找评分高于某个值的评论。
-  - `join`: 这是一种定义同一索引中文档的父/子关系的类型。它允许将一个文档（子）与另一个文档（父）关联起来，这使得可以执行涉及父文档和子文档的复杂查询。例如，如果正在索引博客文章和评论，每篇文章可能都有多个评论。在这种情况下，可以使用 join 字段将每个评论与其对应的文章关联起来。这样，就可以执行如“查找包含至少一条特定评论的所有文章”这样的查询。
+  - `object`: 这是默认的类型，用于存储 JSON 对象。它将 JSON 对象的每个字段都存储为单独的字段。但是，`object` 类型无法正确处理数组中的多个对象，因为它无法保持数组中每个对象的独立性。
+  - `nested`: 用于存储数组中的 JSON 对象，它可以保持数组中每个对象的独立性。这意味着，当你查询 `nested` 类型的字段时，Elasticsearch 会正确地处理每个对象。但是，使用 `nested` 类型会增加存储和查询的复杂性。
+  - `flattended`: 用于存储复杂的 JSON 对象，但不需要对对象的每个字段进行单独的查询。`flattened` 类型将整个 JSON 对象存储为一个字段，这可以节省存储空间，并提高查询性能。但是，你无法对 `flattened` 类型的字段进行精确的查询。
+  - `join`: 用于存储父子关系的数据。它允许你在一个索引中存储和查询父子关系的数据。但是，使用 `join` 类型会增加存储和查询的复杂性，并且它有一些限制，例如，你不能在具有 `join` 字段的索引中使用 `_source` 字段。
   - Range
 
     - `integer_range`: 有符号 32 位整数范围，最小值为$-2^{31}$，最大值为 $2^{31}-1$。
@@ -202,13 +199,11 @@ Elasticsearch 的数据类型大致可以分为精确值（exact values）和全
     - `double_range`: 双精度 64 位 IEEE 754 浮点数范围，限制为有限值。
     - `date_range`: 日期范围字段用于存储日期和时间信息。日期范围字段可以包含日期、时间或日期和时间的组合。日期范围字段可以存储日期和时间信息，如“2015-01-01”、“2015-01-01T12:10:30”或“2015-01-01T12:10:30+01:00”。
     - `ip_range`: IPv4 或 IPv6 地址范围，可以指定一个或多个 IP 地址范围。例如，ip_range 类型可以用于存储和搜索 IP 地址范围，如允许访问的 IP 地址范围。
-
   - `ip`: IPv4 或 IPv6 地址，可以指定一个或多个 IP 地址。例如，ip 类型可以用于存储和搜索 IP 地址，如用户的 IP 地址、服务器的 IP 地址等。
   - `version`: version 类型是一种特殊的整数字段，用于存储文档的版本号。每次更新文档时，版本号都会递增。这使得可以检测到文档的冲突和并发更新。
   - `murmur3`: Murmur3 哈希值，用于存储和搜索哈希值。例如，murmur3 类型可以用于存储和搜索哈希值，如密码哈希、文件哈希等。
   - `aggregate_metric`: aggregate_metric 类型是一种特殊的数字字段，用于存储和搜索聚合度量。例如，aggregate_metric 类型可以用于存储和搜索聚合度量，如平均值、总和、最小值、最大值等。
   - `histogram`: histogram 类型是一种特殊的数字字段，用于存储和搜索直方图数据。例如，histogram 类型可以用于存储和搜索直方图数据，如用户的年龄分布、产品的价格分布等。
-
 - **全文本（Full text）**: 这些类型的字段用于存储全文本数据，如博客文章、电子邮件或产品描述。这些字段在存储数据时会进行分析，将文本分解成单独的、可搜索的项（通常是单词）。这使得可以搜索文本中的单个词或短语。
   - `text`: 用于全文本搜索的字段类型。它会对输入的文本进行分析，以便进行全文本搜索。例如，可以使用 `text` 字段来存储博客文章的内容，然后对文章进行全文本搜索。
   - `match_only_text`: 类似于 `text`，但只支持 `match` 和 `match_phrase` 查询。这可以防止执行可能导致混淆的查询，例如 `term` 查询。例如，可以使用 `match_only_text` 字段来存储用户评论，然后只允许对评论进行 `match` 或 `match_phrase` 查询。
@@ -295,6 +290,7 @@ PUT movies
 ## [文本分析（Text analysis）](https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis.html)
 
 在 Elasticsearch 中，文本分析的过程主要由以下三个步骤组成:
+
 ![An example of text analysis in action](https://image.linux88.com/2024/04/21/f2f57146b7574b508e4e111a7fd376db.svg)
 
 1. **[字符过滤器（Character Filters）](https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis-charfilters.html)**: 这一步在字符级别上应用。文本中的每个字符都会经过这些过滤器。过滤器的任务是从文本字符串中删除不需要的字符。例如，这个过程可以清除 HTML 标签，如 `<h1>`、`<href>` 和 `<src>`。它还可以帮助替换文本（例如，将希腊字母替换为等效的英文单词）或匹配正则表达式中的文本并替换为其等效项（例如，基于正则表达式匹配电子邮件并提取组织的域）。字符过滤器是可选的；分词器可以在没有字符过滤器的情况下存在。Elasticsearch 提供了三种内置的字符过滤器: `html_strip`、`mapping` 和 `pattern_replace`。
@@ -334,9 +330,21 @@ IK 分词器还支持自定义词库，并支持热更新分词字典。可以�
 
 ## 索引操作（Indexing operations）
 
-https://www.elastic.co/guide/en/elasticsearch/reference/8.13/index-templates.html
+- Elasticsearch 提供了索引 API 用于创建、读取、删除和更新索引。
+- 每个索引有三组配置：别名、设置和映射。
+- 索引可以隐式或显式创建：
+  - 当索引不存在且首次为文档建立索引时，会触发隐式创建。隐式创建的索引会应用默认配置（如一个副本和一个分片）。
+  - 当使用索引 API 以自定义配置集实例化索引时，会发生显式创建。
+- 索引模板允许创建具有预定配置设置的索引，这些设置基于匹配的名称在索引创建期间应用。
+- 可以使用收缩或分割机制调整索引的大小。收缩减少了分片的数量，而分割增加了更多的主分片。
+- 根据需要，可以有条件地滚动索引。
+- 索引生命周期管理 (ILM) 帮助在这些生命周期阶段之间转换索引：热、温、冷、冻结和删除。在热阶段，索引完全运行并开放搜索和索引；但在温和冷阶段，索引是只读的。
 
-## [REST APIs](https://www.elastic.co/guide/en/elasticsearch/reference/current/rest-apis.html)
+## 文档操作
+
+
+
+## [Query DSL](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html)
 
 Elasticsearch、Lucene 和 REST APIs 之间的关系:
 
@@ -405,7 +413,7 @@ Compound queries 可以包装其他复合查询或叶子查询，以组合它们
 
 2. **`boosting` query**: 返回匹配正向查询的文档，但降低同时匹配负向查询的文档的评分。
 
-3. **`constant_score` query**: 包装另一个查询的查询，但在过滤器上下文中执行它。所有匹配的文档都被赋予相同的“常数”\_score。
+3. **`constant_score` query**: 将所有匹配的文档赋予一个统一的常数得分，这对于只关心文档是否匹配查询，而不关心它们如何匹配或匹配程度的场景非常有用。
 
 4. **`dis_max` query**: 接受多个查询的查询，并返回匹配任何查询子句的任何文档。虽然 bool 查询会组合所有匹配查询的评分，但 dis_max 查询使用单个最佳匹配查询子句的评分。
 
@@ -437,3 +445,6 @@ Elasticsearch 将 aggregations 分为三类:
 ## References
 
 - [elasticsearch-in-action](https://github.com/madhusudhankonda/elasticsearch-in-action)
+- https://www.elastic.co/use-cases/
+- https://www.elastic.co/blog/a-heap-of-trouble
+- https://www.elastic.co/blog/every-shard-deserves-a-home
