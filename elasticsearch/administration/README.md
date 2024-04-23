@@ -9,3 +9,7 @@
 5. **升级 Elasticsearch 版本**：在某些情况下，升级 Elasticsearch 到新版本可能需要重建索引。
 
 请注意，重建索引可能会消耗大量的计算资源，并可能导致服务中断，因此在进行重建索引操作时需要谨慎。
+
+## 参考
+
+- https://www.elastic.co/guide/en/elasticsearch/reference/current/size-your-shards.html#shard-size-recommendation
