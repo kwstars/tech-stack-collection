@@ -147,3 +147,26 @@ POST _bulk
 { "update" : {"_index":"movies", "_id":"1"} }
 { "doc" : {"title" : "The Godfather (Original)"} }
 ```
+
+
+
+## 分页
+
+
+
+### From & Size
+
+
+
+### Search After
+
+
+
+### Scroll API
+
+
+
+
+
+## 排序
+

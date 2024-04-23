@@ -9,14 +9,6 @@ PUT cars/_doc/1
   "speed_mph":186
 }
 
-# 默认情况下，如果索引不存在，Elasticsearch 会自动创建所需的索引。如果想要限制这个功能，需要将 action.auto_create_index 设置为 false。
-# PUT _cluster/settings
-# {
-#  "persistent": {
-#    "action.auto_create_index":false
-#  }
-# }
-
 # 创建索引的时候定义 mapping 和 settings
 PUT cars_index_with_sample_mapping
 {
@@ -186,7 +178,7 @@ PUT _cluster/settings
 POST cars/_open
 ```
 
-### 拆分索引（Splitting an index）
+### Splitting index
 
 ```json
 PUT all_cars/_settings
@@ -211,7 +203,7 @@ POST all_cars/_split/all_cars_new
 3. **目标索引永远不能比源索引的主分片少**：记住，拆分是为了给索引提供更多的空间。
 4. **目标索引的节点必须有足够的空间**：确保分片被分配了适当的空间。
 
-### 缩小索引（Shrinking an index）
+### Shrinking  index
 
 ```json
 PUT all_cars/_settings
@@ -241,7 +233,7 @@ PUT all_cars/_shrink/all_cars_new2
 4. **目标索引的分片数必须是源索引分片数的因子**：例如，如果的 `all_cars` 索引有 50 个分片，那么只能缩小到 25、10、5 或 2 个分片。
 5. **目标索引的节点必须满足内存要求**：在执行缩小操作时，必须确保目标索引的节点有足够的内存来存储缩小后的索引。
 
-### 滚动索引别名（Rolling over an index alias）
+### Rolling index
 
 ```json
 PUT cars_2021-000001
@@ -457,8 +449,6 @@ PUT _ilm/policy/hot_warm_delete_policy
   }
 }
 ```
-
-
 
 ## 参考
 

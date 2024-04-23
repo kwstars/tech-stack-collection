@@ -73,7 +73,12 @@ Elasticsearch 文档存储机制的主要步骤如下：
 9. 在所有实际应用中，Lucene 将段视为不可变资源。也就是说，一旦用缓冲区中的可用文档创建了一个段，就不会有新的文档进入这个现有的段。相反，它们会被移动到一个新的段。
 10. 同样，删除操作不会在段中的文档上物理执行，而是标记文档以便稍后删除。Lucene 采用这种策略以提供高性能和吞吐量。
 
-## [自定义刷新](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-refresh.html)
+### [Refresh](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-refresh.html)
+
+当新的文档被索引时，它们首先被保存在 Index Buffer 中。然后，以 `refresh_interval` 为间隔，Elasticsearch 会定期清空 Index Buffer，生成新的 Segment，并将这些 Segment 放入文件系统缓存中，同时使这些新的文档可被搜索。这个过程被称为 Refresh。Refresh 的目的是提高搜索的实时性，但是它并不会将数据持久化到磁盘。
+
+- 降低 Refresh 的频率：你可以通过增加 refresh_interval 的值来降低 Refresh 的频率。例如，你可以将 refresh_interval 设置为 5s，这样每 5 秒才会进行一次刷新。
+- 增大 `indices.memory.index_buffer_size`：`indices.memory.index_buffer_size` 是控制索引缓冲区大小的参数。如果这个参数的值过小，可能会导致频繁的 Refresh。你可以尝试增大这个参数的值，以减少 Refresh 的频率。默认值是 JVM 堆大小的 10%。
 
 **服务端刷新控制**
 
@@ -81,14 +86,14 @@ Elasticsearch 文档存储机制的主要步骤如下：
 PUT movies/_settings
 {
   "index": {
-    "refresh_interval": "60s"
+    "refresh_interval": "30s"
   }
 }
 ```
 
 **客户端刷新控制**
 
-文档 API（index、delete、update 和 \_bulk）期望刷新作为查询参数。
+文档 API（index、delete、update 和 bulk）期望刷新作为查询参数。
 
 ```json
 # 告诉引擎不强制刷新操作，而是应用默认设置（一秒）。
@@ -100,3 +105,27 @@ PUT movies/_doc/1?refresh=true
 # 证搜索结果的准确性和提高性能之间找到了平衡，因为它只在刷新周期内阻塞请求，而不是每个操作都触发刷新。
 PUT movies/_doc/1?refresh=wait_for
 ```
+
+### Translog
+
+为了在系统崩溃后能够恢复数据，Elasticsearch 会将每个索引操作写入到 Translog 中。即使 Segment 还没有被写入到磁盘，只要操作已经被写入到 Translog，就可以在系统重启后恢复数据。默认情况下，每个索引请求都会写入到 Translog，并且在请求返回前被 fsync 到磁盘。
+
+- **降低写磁盘的频率**：你可以通过修改 `index.translog.durability` 的值来降低写磁盘的频率。默认情况下，这个参数的值是 `request`，这意味着每个请求都会写入到磁盘。如果你将这个参数的值设置为 `async`，那么写入磁盘的操作将会是异步的，这可以提高性能，但是可能会降低数据的安全性。
+
+- **修改同步间隔**：你可以通过修改 `index.translog.sync_interval` 的值来控制同步到磁盘的频率。例如，你可以将这个参数的值设置为 `30s`，这样每分钟才会同步一次到磁盘。
+
+- **调整 Flush 阈值**：`index.translog.flush_threshold_size` 是控制何时触发 Flush 的参数。默认情况下，这个参数的值是 `512mb`。当 Translog 的大小超过这个值时，Elasticsearch 会触发一个 Flush 操作。你可以尝试增大这个参数的值，以减少 Flush 的频率。
+
+```json
+PUT /my_index/_settings
+{
+  "index" : {
+    "translog.durability" : "async",
+    "translog.sync_interval" : "30s",
+  }
+}
+```
+
+### Flush
+
+Flush 是一个更重的操作，它包括将当前的 Index Buffer 写入到新的 Segment，将新的 Segment fsync 到磁盘，清空 Translog，并将新的 commit point 写入到磁盘。Flush 会确保所有的数据都被持久化到磁盘，这样即使发生系统崩溃，也不会丢失任何数据。Elasticsearch 会自动执行 Flush 操作，但是你也可以手动触发 Flush。

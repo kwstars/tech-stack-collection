@@ -7,31 +7,36 @@ services:
       - cluster.name=es-standalone # 集群名称
       - discovery.type=single-node # 单节点模式
       - bootstrap.memory_lock=true # 防止其内存被交换到硬盘，从而保证其性能。
-      - xpack.security.enabled=false # 关闭安全认证
+      - xpack.security.enabled=false # 安全认证
       - ES_JAVA_OPTS=-Xms512m -Xmx512m # 堆内存大小
+      - ELASTIC_PASSWORD=elastic # 设置密码
     ulimits:
       memlock:
         soft: -1
         hard: -1
     volumes:
-      - data01:/usr/share/elasticsearch/data
+      - elastic_data:/usr/share/elasticsearch/data
       # - ./elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
     ports:
       - 9200:9200
+
   kibana:
     image: docker.elastic.co/kibana/kibana:8.13.2
     container_name: kibana
     environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200 # 设置elasticsearch地址
-      # - I18N_LOCALE=zh-CN # 设置语言
-      - csp.strict=false # 关闭安全策略
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      # - I18N_LOCALE=zh-CN
+      - ELASTICSEARCH_USERNAME=kibana
+      - ELASTICSEARCH_PASSWORD=changeme
+      - MONITORING_UI_ELASTICSEARCH_USERNAME=test-user
+      - MONITORING_UI_ELASTICSEARCH_PASSWORD=test-user
     # volumes:
     #   - ./kibana.yml:/usr/share/kibana/config/kibana.yml
     ports:
       - 5601:5601
 
 volumes:
-  data01:
+  elastic_data:
     driver: local
 
 networks:
