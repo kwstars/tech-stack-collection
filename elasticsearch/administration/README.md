@@ -189,6 +189,81 @@ PUT _cluster/settings
 }
 ```
 
+### [备份和恢复（Snapshots）](https://www.elastic.co/guide/en/elasticsearch/reference/current/snapshot-restore.html)
+
+```json
+# 先在 `elasticsearch.yml` 中添加 `path.repo=/usr/share/elasticsearch/backup`
+# 在 Elasticsearch 中注册一个位于 "/usr/share/elasticsearch/backup" 的文件系统（fs）类型的快照仓库。
+PUT _snapshot/es_cluster_snapshot_repository
+{
+  "type": "fs",
+  "settings": {
+    "location": "/usr/share/elasticsearch/backup"
+  }
+}
+
+# 在 "es_cluster_snapshot_repository" 仓库创建名为 "custom_prod_snapshots" 的快照，该快照将包含所有名称中包含 "movies" 和 "reviews" 的索引。
+PUT _snapshot/es_cluster_snapshot_repository/custom_prod_snapshots
+{
+  "indices": ["*movies*","*reviews*"]
+}
+
+
+# 在 "es_cluster_snapshot_repository" 仓库创建名为 "custom_prod_snapshots_with_metadata" 的快照。该快照将包含所有名称中包含 "movies" 和 "reviews"，但不包含以 ".old" 结尾的索引。同时，这个快照还包含一些元数据，如 "reason"、"incident_id" 和 "user"。
+PUT _snapshot/es_cluster_snapshot_repository/custom_prod_snapshots_with_metadata
+{
+  "indices": ["*movies*","*reviews*", "-*.old"],
+  "metadata":{
+    "reason":"user request",
+    "incident_id":"ID12345",
+    "user":"mkonda"
+  }
+}
+
+# 列出所有快照的列表，并按照快照 ID 进行排序。
+GET _cat/snapshots/es_cluster_snapshot_repository?v=true&s=id
+
+# 获取 Elasticsearch 中所有的快照仓库。
+GET _snapshot
+
+# 获取 Elasticsearch 中所有快照的状态。
+GET _snapshot/_status
+
+# 获取 "es_cluster_snapshot_repository" 仓库当前正在进行的快照的状态。
+GET _snapshot/es_cluster_snapshot_repository/_current
+
+
+# 从 "es_cluster_snapshot_repository" 仓库的 "custom_prod_snapshots" 快照中恢复所有名称中包含 "movies" 的索引。
+POST _snapshot/es_cluster_snapshot_repository/custom_prod_snapshots/_restore
+{
+  "indices":["*movies*"]
+}
+
+# 删除 "es_cluster_snapshot_repository" 仓库的 "custom_prod_snapshots" 快照。
+DELETE _snapshot/es_cluster_snapshot_repository/custom_prod_snapshots
+
+
+
+# 创建一个名为 "prod_cluster_daily_backups" 的快照生命周期管理（SLM）策略。这个策略会在每天的 00:00:00 执行，创建一个名为 "<prod_daily_backups-{now/d}>" 的快照，该快照将包含所有名称中包含 "movies" 和 "reviews" 的索引，并存储在 "es_cluster_snapshot_repository" 仓库中。这个策略不包含全局状态，不忽略不可用的索引，并且在创建 7 天后过期。
+PUT _slm/policy/prod_cluster_daily_backups
+{
+  "name":"<prod_daily_backups-{now/d}>",
+  "schedule": "0 0 0 * * ?",
+  "repository": "es_cluster_snapshot_repository",
+  "config": {
+    "indices":["*movies*", "*reviews*"],
+    "include_global_state": false,
+    "ignore_unavailable": false
+  },
+  "retention":{
+    "expire_after":"7d"
+  }
+}
+
+# 立即执行 "prod_cluster_daily_backups" 策略，创建一个快照。
+POST _slm/policy/prod_cluster_daily_backups/_execute
+```
+
 ### 关闭无关的功能
 
 在 Elasticsearch 中，有一些设置可以帮助你关闭不需要的功能，以优化性能和存储使用。以下是你提到的一些设置的解释：
