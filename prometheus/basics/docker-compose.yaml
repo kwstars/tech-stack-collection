@@ -143,24 +143,16 @@ services:
       - mongodb
       - prometheus
 
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.15
-    environment:
-      - node.name=elasticsearch
-      - cluster.name=docker-cluster
-      - bootstrap.memory_lock=true
-      - xpack.security.enabled=false
-      - discovery.type=single-node
-    ports:
-      - 9200:9200
-      - 9300:9300
-
+  # https://github.com/prometheus-community/elasticsearch_exporter/tree/master/examples
   elasticsearch_exporter:
     image: prometheuscommunity/elasticsearch-exporter:v1.7.0
     ports:
       - "9114:9114"
-    environment:
-      ES_URI: "http://elasticsearch:9200"
+    command:
+      - "-es.uri=http://elasticsearch:9200"
+      - "-es.all=true"
+      - "-es.indices=true"
+      - "-es.shards=true"
     depends_on:
       - elasticsearch
 
