@@ -26,10 +26,6 @@ services:
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
       # - I18N_LOCALE=zh-CN
-      - ELASTICSEARCH_USERNAME=kibana
-      - ELASTICSEARCH_PASSWORD=changeme
-      - MONITORING_UI_ELASTICSEARCH_USERNAME=test-user
-      - MONITORING_UI_ELASTICSEARCH_PASSWORD=test-user
     # volumes:
     #   - ./kibana.yml:/usr/share/kibana/config/kibana.yml
     ports:
