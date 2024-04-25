@@ -1,0 +1,36 @@
+services:
+  mongodb:
+    container_name: mongodb
+    image: mongodb/mongodb-community-server:7.0-ubuntu2204
+    environment:
+      MONGODB_INITDB_ROOT_USERNAME: root
+      MONGODB_INITDB_ROOT_PASSWORD: mongodb
+    volumes:
+      - "mongodb_data:/data/db"
+    ports:
+      - 27017:27017
+    command: ["--port", "27017", "--bind_ip_all", "--dbpath", "/data/db"]
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mongosh",
+          "--username",
+          "root",
+          "--password",
+          "mongodb",
+          "--quiet",
+          "--eval",
+          "'quit(db.adminCommand({ ping: 1 }).ok ? 0 : 2)'",
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  mongodb_data:
+    driver: local
+
+networks:
+  default:
+    name: monitoring
