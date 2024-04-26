@@ -1,4 +1,3 @@
-
 step1:
 	docker-compose up -d
 
@@ -31,3 +30,7 @@ primary_to_secondary:
 
 show_config:
 	docker-compose exec mongo1 mongosh --eval "db.adminCommand({ getParameter: '*' })"
+
+clean:
+	docker-compose rm -sf
+	docker volume rm replicaset_mongodata01 replicaset_mongodata02 replicaset_mongodata03

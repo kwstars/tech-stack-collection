@@ -165,7 +165,32 @@ Change Streams 在性能方面需要考虑的是，如果针对数据库打开�
 
 ## [Time Series](https://www.mongodb.com/docs/manual/core/timeseries-collections/)
 
-## 索引
+## [索引](https://www.mongodb.com/docs/manual/indexes/)
+
+索引类型（Index Types）：索引可以用于哪种类型的查询。
+
+- **单字段索引（Single Field Indexes）**：在一个字段上创建索引。
+- ==**复合索引（Compound Indexes）**==：在多个字段上创建索引，以支持多字段的查询。
+  - ESR 原则：在创建组合索引时，将等式条件的字段放在前面，排序字段放在中间，范围条件的字段放在后面，以提高查询效率。
+- **多键索引（Multikey Indexes）**：用于数组数据。MongoDB 会为数组中的每个元素创建索引。
+- **文本索引（Text Indexes）**：支持在包含字符串内容的字段上进行文本搜索查询的索引类型，它可以提高搜索特定单词或短语的性能，每个集合只能有一个文本索引，但该索引可以覆盖多个字段。
+- **通配符索引（Wildcard Indexes）**：可以在文档的任何字段上创建索引。
+- **地理空间索引（Geospatial Indexes）**：用于地理空间查询。
+- **哈希索引（Hashed Indexes）**：用于支持分片。
+
+索引属性（Index Properties）描述了索引的特定行为或特性。
+
+- 大小写不敏感索引（Case-Insensitive Indexes）：允许你在查询时忽略字段值的大小写。
+
+- 隐藏索引（Hidden Indexes）：不会被查询优化器用于查询计划，但仍然会接收写操作。
+
+- 部分索引（Partial Indexes）：只包含满足过滤条件的文档，可以减少索引的大小和提高写操作的性能。
+
+- 稀疏索引（Sparse Indexes）：只包含存在索引字段的文档，对于不存在索引字段的文档，不会在索引中创建条目。
+
+- TTL 索引（TTL Indexes）：这种索引允许你设置文档的生存时间，MongoDB 会自动删除过期的文档。
+
+- 唯一索引（Unique Indexes）：强制字段值的唯一性，不允许插入具有相同索引字段值的文档。
 
 ## 部署架构
 

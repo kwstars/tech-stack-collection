@@ -1,3 +1,18 @@
+## [Replication Methods](https://www.mongodb.com/docs/manual/reference/method/js-replication/)
+
+- `rs.add()`：向副本集添加一个成员。
+- `rs.addArb()`：向副本集添加一个仲裁者。
+- `rs.conf()`：返回副本集的配置文档。
+- `rs.freeze()`：阻止当前成员在一段时间内寻求作为主节点的选举。
+- `rs.initiate()`：初始化一个新的副本集。
+- `rs.printReplicationInfo()`：从主节点的角度打印副本集状态的格式化报告。
+- `rs.printSecondaryReplicationInfo()`：从次级节点的角度打印副本集状态的格式化报告。
+- `rs.reconfig()`：通过应用新的副本集配置对象来重新配置副本集。
+- `rs.remove()`：从副本集中移除一个成员。
+- `rs.status()`：返回一个包含副本集状态信息的文档。
+- `rs.stepDown()`：使当前的主节点变为次级节点，这将强制进行选举。
+- `rs.syncFrom()`：设置这个副本集成员将从哪个成员同步，覆盖默认的同步目标选择逻辑。
+
 ## [`rs.status()`](https://www.mongodb.com/docs/manual/reference/command/replSetGetStatus/)
 
 ```js

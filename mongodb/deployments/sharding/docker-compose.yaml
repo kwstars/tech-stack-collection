@@ -1,31 +1,119 @@
 services:
-  mongo1:
+  configsvr1:
     image: mongodb/mongodb-community-server:7.0-ubuntu2204
-    container_name: mongo1
-    command: ["--replSet", "my-replica-set", "--bind_ip_all", "--port", "30001"]
+    container_name: configsvr1
+    command: [
+        "--configsvr", # Declare this is a config db of a  cluster; default port 27019; default dir /data/configdb
+        "--replSet",
+        "config-rs",
+        "--wiredTigerCacheSizeGB",
+        "0.5",
+        "--oplogSize",
+        "100",
+      ]
     volumes:
-      - ./data/mongo-1:/data/db
-    ports:
-      - 30001:30001
+      - configsvr1:/data/configdb
     healthcheck:
-      test: test $$(echo "rs.initiate({_id:'my-replica-set',members:[{_id:0,host:\"mongo1:30001\"},{_id:1,host:\"mongo2:30002\"},{_id:2,host:\"mongo3:30003\"}]}).ok || rs.status().ok" | mongo --port 30001 --quiet) -eq 1
+      test:
+        [
+          "CMD",
+          "mongosh",
+          "--port",
+          "27019",
+          "--quiet",
+          "--eval",
+          "'quit(db.adminCommand({ ping: 1 }).ok ? 0 : 2)'",
+        ]
       interval: 10s
       start_period: 30s
+      timeout: 5s
+      retries: 3
 
-  mongo2:
+  shardsrv1:
     image: mongodb/mongodb-community-server:7.0-ubuntu2204
-    container_name: mongo2
-    command: ["--replSet", "my-replica-set", "--bind_ip_all", "--port", "30002"]
+    container_name: shardsrv1
+    command: [
+        "--shardsvr", # Declare this is a shard db of a cluster; default port 27018
+        "--replSet",
+        "shard1-rs",
+        "--wiredTigerCacheSizeGB",
+        "0.5",
+        "--oplogSize",
+        "100",
+      ]
     volumes:
-      - ./data/mongo-2:/data/db
-    ports:
-      - 30002:30002
+      - shardsrv1:/data/db
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mongosh",
+          "--port",
+          "27018",
+          "--quiet",
+          "--eval",
+          "'quit(db.adminCommand({ ping: 1 }).ok ? 0 : 2)'",
+        ]
+      interval: 10s
+      start_period: 30s
+      timeout: 5s
+      retries: 3
 
-  mongo3:
+  shardsrv4:
     image: mongodb/mongodb-community-server:7.0-ubuntu2204
-    container_name: mongo3
-    command: ["--replSet", "my-replica-set", "--bind_ip_all", "--port", "30003"]
+    container_name: shardsrv4
+    command:
+      [
+        "--shardsvr",
+        "--replSet",
+        "shard2-rs",
+        "--wiredTigerCacheSizeGB",
+        "0.5",
+        "--oplogSize",
+        "100",
+      ]
     volumes:
-      - ./data/mongo-3:/data/db
+      - shardsrv4:/data/db
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mongosh",
+          "--port",
+          "27018",
+          "--quiet",
+          "--eval",
+          "'quit(db.adminCommand({ ping: 1 }).ok ? 0 : 2)'",
+        ]
+      interval: 10s
+      start_period: 30s
+      timeout: 5s
+      retries: 3
+
+  mongos1:
+    image: mongodb/mongodb-community-server:7.0-ubuntu2204
+    container_name: mongos1
+    command: ["mongos", "--configdb", "config-rs/configsvr1:27019"]
     ports:
-      - 30003:30003
+      - "27017:27017"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mongosh",
+          "--quiet",
+          "--eval",
+          "'quit(db.adminCommand({ ping: 1 }).ok ? 0 : 2)'",
+        ]
+
+volumes:
+  configsvr1:
+    driver: local
+  shardsrv1:
+    driver: local
+  shardsrv4:
+    driver: local
+
+networks:
+  default:
+    name: monitoring

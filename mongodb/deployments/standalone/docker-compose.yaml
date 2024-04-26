@@ -9,7 +9,8 @@ services:
       - "mongodb_data:/data/db"
     ports:
       - 27017:27017
-    command: ["--port", "27017", "--bind_ip_all", "--dbpath", "/data/db"]
+    command:
+      ["mongod", "--port", "27017", "--bind_ip_all", "--dbpath", "/data/db"]
     healthcheck:
       test:
         [
