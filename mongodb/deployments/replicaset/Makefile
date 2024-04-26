@@ -1,3 +1,4 @@
+
 step1:
 	docker-compose up -d
 
@@ -5,10 +6,13 @@ step1:
 step2:
 	docker-compose exec mongo1 mongosh --eval "rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'mongo1:27017' }, { _id: 1, host: 'mongo2:27017' }, { _id: 2, host: 'mongo3:27017' } ] })"
 
+rs_help:
+	docker-compose exec mongo1 mongosh --eval "rs.help()"
+
 check_status:
 	docker-compose exec mongo1 mongosh --eval "rs.status()"
 
-show_config:
+show_rs_config:
 	docker-compose exec mongo1 mongosh --eval "rs.conf()"
 
 # https://www.mongodb.com/docs/manual/reference/method/rs.remove/
@@ -24,3 +28,6 @@ add_member:
 # 一旦降级，原主节点变为从节点，并在 stepDownSecs 指定的剩余时间内无法再次成为主节点。
 primary_to_secondary:
 	docker-compose exec mongo1 mongosh --eval "rs.stepDown()"
+
+show_config:
+	docker-compose exec mongo1 mongosh --eval "db.adminCommand({ getParameter: '*' })"

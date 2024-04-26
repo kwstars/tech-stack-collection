@@ -2,14 +2,14 @@
 
 以下是 [MongoDB vs MySQL](https://www.mongodb.com/docs/manual/reference/sql-comparison/) 的基本概念对比：
 
-|    MongoDB     |  MySQL   |
-| :------------: | :------: |
-|    Database    | Database |
-|   Collection   |  Table   |
-|    Document    |   Row    |
-|     Field      |  Column  |
-|      BSON      |  Schema  |
-| Query Language |   SQL    |
+|  MongoDB   |  MySQL   |
+| :--------: | :------: |
+|  Database  | Database |
+| Collection |  Table   |
+|  Document  |   Row    |
+|   Field    |  Column  |
+|    BSON    |  Schema  |
+|    MQL     |   SQL    |
 
 ## [数据类型](https://www.mongodb.com/docs/manual/reference/bson-types/)
 
@@ -55,6 +55,118 @@ MongoDB 使用 BSON（Binary JSON）格式来存储数据，BSON 支持的数据
 
 20. **Max key**：最大键。
 
+## 数据建模
+
+### [建模类型](https://www.mongodb.com/blog/post/building-with-patterns-a-summary)
+
+- **Attribute Pattern（属性模式）**：通过将==多个列（field）组织为键值对数组==，优化了对具有共同特性字段的查询和排序，使得索引更加高效，查询更加简单和快速。
+- **Schema Versioning（模式版本控制模式）**：通过为文档添加 `schema_version` 字段来支持不同版本的 schema 共存于同一个集合中的模式设计模式。
+- **Subset（子集模式）**：将文档中经常访问的数据和不常访问的数据分离存储在不同集合中的模式，目的是减小工作集大小，提高常用数据的访问效率。
+- **Approximation（近似值模式）**：在应用程序中对不需要高精度、计算代价昂贵的数据使用近似值而不是精确值的模式设计模式，目的是减少数据库写入操作，从而提高性能。
+- **Preallocated（预分配模式）**：预先为文档分配空结构或数组，尽管暂时不完全利用，但能简化代码并提高某些操作的性能，代价是增加了内存占用。
+- **Bucket（分桶模式）**：将时间序列数据根据时间段进行分组存储在同一文档中的模式，通过预计算和存储聚合结果，可以降低索引大小、简化查询并提高分析性能。
+- **Polymorphic（多态模式）**：在同一个集合中存储结构相似但不完全相同的文档，以便能够对整个集合执行查询操作。
+- **Computed（计算模式）**：预先计算和存储需要重复计算的数据的模式，目的是减轻 CPU 负载，提高应用程序性能。
+
+## CRUD
+
+### [readPreference](https://www.mongodb.com/docs/manual/core/read-preference/)
+
+### [Read Concern](https://www.mongodb.com/docs/manual/reference/read-concern/)
+
+Read Concern 用于指定读取操作（如查询）应返回的数据的版本。Read Concern 可以控制数据的一致性和隔离性。
+
+Read Concern 的主要参数包括：
+
+- `level`：此选项指定了读取操作应返回的数据的版本。
+  - `local`：返回本地副本集成员的数据。这是默认的 Read Concern 级别。
+  - `available`：对于非分片集合，此级别与 `local` 相同。对于分片集合，此级别将返回任何数据，不管数据是否可能反映最新的成功写入操作。
+  - `majority`：返回已经复制到大多数副本集成员的数据。
+  - `linearizable`：确保返回的数据反映了所有成功写入操作的最新状态。需要在网络中的所有副本集成员之间进行一致性检查。此级别只适用于对单个文档的读取操作。
+  - `snapshot`：返回在同一时间点捕获的数据的快照。此级别只在分布式事务中可用。
+
+这些信息可以在 MongoDB 的官方文档中找到：[Read Concern](https://docs.mongodb.com/manual/reference/read-concern/)
+以下是一个使用 Read Concern 的示例：
+
+```javascript
+db.collection.find(
+   <query>,
+   { readConcern: { level: "majority" } }
+)
+```
+
+在这个示例中，查询操作将返回已经复制到大多数副本集成员的数据。
+
+### [Write Concern](https://www.mongodb.com/docs/manual/reference/write-concern/)
+
+Write Concern 用于指定在写操作（如插入、更新或删除）被视为成功之前，必须满足的数据持久性和数据复制的条件。
+
+Write Concern 的主要参数包括：
+
+- `w`：此选项指定了数据需要被写入的副本集成员数量。例如，`w: 1` 表示数据至少需要被写入一个副本集成员。
+- `j`：如果设置为 `true`，则写操作将等待 MongoDB 将数据写入磁盘的日志文件，以确保在 MongoDB 实例崩溃的情况下，数据不会丢失。
+- `wtimeout`：此选项指定了等待写操作完成的时间（以毫秒为单位）。如果写操作在这个时间内未完成，MongoDB 将停止等待，但不会回滚已经完成的数据写入。
+
+以下是一个使用 Write Concern 的示例：
+
+```js
+db.collection.insert(
+   <document>,
+   { writeConcern: { w: "majority", j: true, wtimeout: 1000 } }
+)
+```
+
+在这个示例中，插入操作将等待大多数副本集成员确认写入操作，并且如果写入操作在 1 秒内未完成，将停止等待。
+
+## 事务
+
+MongoDB 的事务允许执行多个操作作为一个单一的、原子性的单位。这意味着，如果一个事务成功，则它的所有操作都会被应用，并且在任何后续的读取操作中都可以看到这些更改。如果一个事务遇到错误，则它的所有操作都不会被应用。
+
+MongoDB 的事务提供了以下几个关键特性：
+
+- **原子性**：事务中的所有操作要么全部成功，要么全部失败。
+- **一致性**：事务确保数据库从一个一致的状态转换到另一个一致的状态。
+- **隔离性**：在事务正在进行时，其操作结果对其他事务是不可见的。
+- **持久性**：一旦事务被提交，其更改就是永久性的，即使发生系统故障也不会丢失。
+
+以下是一个 MongoDB 事务的示例：
+
+在这个示例中，插入书籍和作者的操作被包含在一个事务中，要么两个操作都成功，要么两个操作都不会被应用。
+
+MongoDB 的事务功能在某些方面与传统的关系型数据库（如 MySQL）的事务功能相比可能存在一些限制：
+
+1. **性能**：MongoDB 的事务可能会对性能产生影响，特别是在处理大量数据或进行复杂查询时。这是因为 MongoDB 需要在事务期间维护额外的状态信息，并在事务结束时清理这些信息。
+
+2. **跨集群事务**：在 MongoDB 4.0 版本中，事务只支持单个副本集。直到 4.2 版本，MongoDB 才开始支持跨分片的事务，但这可能会增加事务的复杂性和开销。
+
+3. **持久性**：在 MongoDB 中，事务的持久性取决于 Write Concern 的设置。如果 Write Concern 设置为 "majority"，那么只有当事务的更改已经复制到大多数副本集成员时，这些更改才被视为持久的。这与 MySQL 不同，MySQL 的事务一旦提交，更改就是持久的。
+
+4. **超时限制**：MongoDB 的事务有一个默认的超时限制，如果事务在这个时间限制内没有完成，那么事务将被自动中止。这可能会影响到需要长时间运行的事务。
+
+5. **复杂性**：MongoDB 的事务需要手动开始和结束，这可能会增加应用程序的复杂性。
+
+## [Change Streams](https://www.mongodb.com/docs/manual/changeStreams/)
+
+MongoDB 的 Change Streams 是一种允许应用程序访问实时数据库更改的功能。它们可以在集合、数据库或整个部署（包括分片集群）级别打开，可以订阅所有数据更改并立即对其做出反应。由于 Change Streams 使用了聚合框架，应用程序还可以过滤特定的更改或按需转换通知。
+
+从 MongoDB 5.1 开始，Change Streams 进行了优化，提供了更高效的资源利用和某些聚合管道阶段的更快执行。
+
+Change Streams 可用于副本集和分片集群，但需要满足以下条件：
+
+- 存储引擎：副本集和分片集群必须使用 WiredTiger 存储引擎。Change Streams 也可以在使用了 MongoDB 的数据在静态加密特性的部署中使用。
+- 副本集协议版本：副本集和分片集群必须使用副本集协议版本 1（pv1）。
+- "majority" 读取关注（read concern）的启用：从 MongoDB 4.2 开始，无论是否支持 "majority" 读取关注，Change Streams 都可用。在 MongoDB 4.0 及更早版本中，只有在启用了 "majority" 读取关注（默认启用）时，Change Streams 才可用。
+
+可以在集合、数据库或整个部署（副本集或分片集群）上打开 Change Streams，以监视所有非系统集合的更改（排除 admin、local 和 config 数据库）。
+
+Change Streams 在性能方面需要考虑的是，如果针对数据库打开的活动 Change Streams 数量超过了连接池大小，可能会出现通知延迟。在分片集群中使用 Change Streams 时，mongos 会在每个分片上创建单独的 Change Streams，接收到 Change Streams 结果后，它会对这些结果进行排序和过滤，如果需要，还会执行 fullDocument 查找。为了获得最佳性能，应限制在 Change Streams 中使用 $lookup 查询。
+
+生产环境 Change Streams 最佳实践：
+
+## [Time Series](https://www.mongodb.com/docs/manual/core/timeseries-collections/)
+
+## 索引
+
 ## 部署架构
 
 ### [副本集](https://www.mongodb.com/docs/manual/replication/)
@@ -85,6 +197,7 @@ MongoDB 使用 BSON（Binary JSON）格式来存储数据，BSON 支持的数据
 2. **心跳检测**：副本集中的成员会定期进行心跳检测，以检查其他成员的状态。如果一个成员在一定时间内（默认为 10 秒）没有响应心跳请求，那么该成员将被视为不可达。
 3. **发起选举**：如果主节点变得不可达，剩余的副本集成员会发起选举以选出新的主节点。只有具有投票权的成员才能参与选举。
 4. **选举过程**：在选举过程中，每个成员都会投票给它认为最适合成为主节点的成员。在 MongoDB 中，最适合成为主节点的通常是数据最新的成员。影响选举的因素有以下几点：
+
    1. **节点的投票权**：只有具有投票权的成员才能参与选举。
    2. **节点的数据同步状态**：数据最新的节点更有可能被选为主节点。
    3. **节点的优先级**：优先级高的节点更有可能被选为主节点。
@@ -94,9 +207,9 @@ MongoDB 使用 BSON（Binary JSON）格式来存储数据，BSON 支持的数据
 
 #### 常用成员配置选选项
 
-1. **[投票权（`votes` 参数）](https://www.mongodb.com/docs/manual/reference/replica-configuration/#mongodb-rsconf-rsconf.members-n-.votes)**：默认情况下，每个副本集成员都有投票权，可以参与选举。但是，你可以通过设置 `votes` 参数为 0 来使一个成员失去投票权。
+1. **[投票权（`votes` 参数）](https://www.mongodb.com/docs/manual/reference/replica-configuration/#mongodb-rsconf-rsconf.members-n-.votes)**：默认情况下，每个副本集成员都有投票权，可以参与选举。但是，可以通过设置 `votes` 参数为 0 来使一个成员失去投票权。
 2. **[优先级（`priority` 参数）](https://www.mongodb.com/docs/manual/reference/replica-configuration/#mongodb-rsconf-rsconf.members-n-.priority)**：这个参数决定了一个成员被选为主节点的优先级。数值越高，优先级越高。如果设置为 0，该成员将永远不会被选为主节点。
-3. **[隐藏（`hidden` 参数）](https://www.mongodb.com/docs/manual/reference/replica-configuration/#mongodb-rsconf-rsconf.members-n-.hidden)**：复制主节点的数据，但对客户端应用程序是不可见的。优先级为0的成员，可以在副本集选举中投票和确认写关注（Write Concern）。
+3. **[隐藏（`hidden` 参数）](https://www.mongodb.com/docs/manual/reference/replica-configuration/#mongodb-rsconf-rsconf.members-n-.hidden)**：复制主节点的数据，但对客户端应用程序是不可见的。优先级为 0 的成员，可以在副本集选举中投票和确认写关注（Write Concern）。
 
 ### [分片](https://www.mongodb.com/docs/manual/sharding/)
 

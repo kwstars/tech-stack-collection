@@ -5,7 +5,15 @@ services:
     # environment:
     #   MONGODB_INITDB_ROOT_USERNAME: root
     #   MONGODB_INITDB_ROOT_PASSWORD: mongodb
-    command: ["--replSet", "rs0"]
+    command:
+      [
+        "--replSet",
+        "rs0",
+        "--wiredTigerCacheSizeGB",
+        "0.5",
+        "--oplogSize",
+        "100",
+      ]
     volumes:
       - mongodata01:/data/db
     ports:
@@ -15,18 +23,14 @@ services:
         [
           "CMD",
           "mongosh",
-          "--username",
-          "root",
-          "--password",
-          "mongodb",
           "--quiet",
           "--eval",
           "'quit(db.adminCommand({ ping: 1 }).ok ? 0 : 2)'",
         ]
-    # healthcheck:
-    #   test: test $$(echo "rs.initiate({_id:'my-replica-set',members:[{_id:0,host:\"mongo1:30001\"},{_id:1,host:\"mongo2:30002\"},{_id:2,host:\"mongo3:30003\"}]}).ok || rs.status().ok" | mongo --port 30001 --quiet) -eq 1
-    #   interval: 10s
-    #   start_period: 30s
+      interval: 10s
+      start_period: 30s
+      timeout: 5s
+      retries: 3
 
   mongo2:
     image: mongodb/mongodb-community-server:7.0-ubuntu2204
@@ -34,7 +38,15 @@ services:
     # environment:
     #   MONGODB_INITDB_ROOT_USERNAME: root
     #   MONGODB_INITDB_ROOT_PASSWORD: mongodb
-    command: ["--replSet", "rs0"]
+    command:
+      [
+        "--replSet",
+        "rs0",
+        "--wiredTigerCacheSizeGB",
+        "0.5",
+        "--oplogSize",
+        "100",
+      ]
     volumes:
       - mongodata02:/data/db
     ports:
@@ -44,14 +56,14 @@ services:
         [
           "CMD",
           "mongosh",
-          "--username",
-          "root",
-          "--password",
-          "mongodb",
           "--quiet",
           "--eval",
           "'quit(db.adminCommand({ ping: 1 }).ok ? 0 : 2)'",
         ]
+      interval: 10s
+      start_period: 30s
+      timeout: 5s
+      retries: 3
 
   mongo3:
     image: mongodb/mongodb-community-server:7.0-ubuntu2204
@@ -59,7 +71,15 @@ services:
     # environment:
     #   MONGODB_INITDB_ROOT_USERNAME: root
     #   MONGODB_INITDB_ROOT_PASSWORD: mongodb
-    command: ["--replSet", "rs0"]
+    command:
+      [
+        "--replSet",
+        "rs0",
+        "--wiredTigerCacheSizeGB",
+        "0.5",
+        "--oplogSize",
+        "100",
+      ]
     volumes:
       - mongodata03:/data/db
     ports:
@@ -69,14 +89,14 @@ services:
         [
           "CMD",
           "mongosh",
-          "--username",
-          "root",
-          "--password",
-          "mongodb",
           "--quiet",
           "--eval",
           "'quit(db.adminCommand({ ping: 1 }).ok ? 0 : 2)'",
         ]
+      interval: 10s
+      start_period: 30s
+      timeout: 5s
+      retries: 3
 
 volumes:
   mongodata01:

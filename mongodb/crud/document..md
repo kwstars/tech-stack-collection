@@ -261,7 +261,7 @@ db.inventory.replaceOne(
 
 ## 删除
 
-```json
+```js
 db.inventory.insertMany( [
    { item: "journal", qty: 25, size: { h: 14, w: 21, uom: "cm" }, status: "A" },
    { item: "notebook", qty: 50, size: { h: 8.5, w: 11, uom: "in" }, status: "P" },
