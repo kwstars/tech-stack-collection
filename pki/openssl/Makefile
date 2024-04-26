@@ -41,5 +41,10 @@ csr: server.csr
 check: server.key
 	openssl rsa -check -in server.key
 
+# 修改私钥的密码
+change-password: server.key
+	openssl rsa -in server.key -aes256 -out server.key.new
+	mv server.key.new server.key
+
 clean:
 	rm -f ca.key ca.crt server.key server.csr server.crt
