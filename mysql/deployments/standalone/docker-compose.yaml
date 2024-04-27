@@ -1,0 +1,40 @@
+services:
+  mysql:
+    container_name: mysql
+    image: mysql:8.0
+    restart: always
+    ports:
+      - "0.0.0.0:3306:3306"
+    volumes:
+      - "mysql_data:/var/lib/mysql:rw"
+      # - "${PWD}/mysql:/docker-entrypoint-initdb.d"
+    environment:
+      MYSQL_ROOT_PASSWORD: "mysql"
+      TZ: "Asia/Shanghai"
+      MYSQL_DATABASE: account
+      MYSQL_USER: account
+      MYSQL_PASSWORD: "123456"
+    command: [
+        "--default_storage_engine=InnoDB", # 默认存储引擎
+        "--character_set_server=utf8mb4", # 默认字符集
+        "--collation_server=utf8mb4_general_ci", # 默认字符集校验规则
+        "--log_bin=1", # 开启二进制日志, 默认是关闭的
+        "--innodb_flush_log_at_trx_commit=1", # 用于控制 InnoDB 存储引擎在每个事务提交时如何刷新（写入磁盘）事务日志。默认值为 '1'，表示在每次事务提交时都将日志写入磁盘，这提供了最高的数据持久性。建议值为 '1' 在需要最高数据持久性的情况下，或者为 '2' 或 '0' 在可以接受较低数据持久性 以换取更高写入性能的情况下。
+        "--slow_query_log=1", # 开启慢查询日志, 默认是关闭的
+        "--long_query_time=3", # 系统变量，用于定义什么样的查询可以被认为是“长查询”，并被记录 在慢查询日志中，其值以秒为单位。默认值为 '10.000000' 秒。建议值取决于你的应用需求，但通常设置 为能帮助你识别和优化性能问题的查询的合理值。
+        "--general_log=on", # 系统变量，用于控制是否记录服务器接收到的所有查询，用于调试和分析。默认值为 '0'（OFF），表示不记录。在生产环境中，建议值通常为 '0'，以避免日志文件过大。在需要 调试或分析查询性能时，可以临时设置为 '1'（ON）。
+        "--autocommit=1", # 如何 set autocommit=0 这个事务持续存在直到你。用于控制是否在每个查询后自动提交事务。如果设置为 '1'（默认值），则每个查询（如果它不是显式的事务的一部分）都会立即被提交，结果立即持久化。如果设置为 '0'，则必须显式地提交事务（）。在需要控制事务边界的应用中，可能会将其设置为 '0'，但在大多数情况下，建议值为 '1'。
+        "--innodb_change_buffer_max_size=50", # 默认25
+        "--innodb_io_capacity=200", # 默认是200 https://dev.mysql.com/doc/refman/8.0/en/innodb-configuring-io-capacity.html
+        "--sync_binlog=100",
+      ]
+    healthcheck:
+      test: mysqladmin ping -h 127.0.0.1 -u root --password=$$MYSQL_ROOT_PASSWORD
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  default:
+    name: monitoring
