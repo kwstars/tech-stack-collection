@@ -72,6 +72,22 @@ MongoDB 使用 BSON（Binary JSON）格式来存储数据，BSON 支持的数据
 
 ### [readPreference](https://www.mongodb.com/docs/manual/core/read-preference/)
 
+在 MongoDB 中，`readPreference` 是决定了驱动程序或 mongos 从哪个成员（或成员集）读取数据。这个设置可以在多个级别进行配置，包括客户端、数据库、集合或操作级别。
+
+`readPreference` 有以下几种选项：
+
+1. **primary**：这是默认的 `readPreference`。所有的读操作都会发送到复制集的主节点。如果主节点不可用，那么读操作将会失败。
+
+2. **primaryPreferred**：在大多数情况下，读操作会发送到复制集的主节点。但是，如果主节点不可用，读操作会发送到复制集的一个副本节点。
+
+3. **secondary**：所有的读操作都会发送到复制集的一个副本节点。如果没有副本节点可用，那么读操作将会失败。
+
+4. **secondaryPreferred**：在大多数情况下，读操作会发送到复制集的一个副本节点。但是，如果没有副本节点可用，读操作会发送到复制集的主节点。
+
+5. **nearest**：读操作会发送到网络延迟最小的节点，无论它是主节点还是副本节点。
+
+`readPreference` 的选择取决于你的应用程序的需求。例如，如果你的应用程序需要最新的数据，你应该选择 `primary`。如果你的应用程序需要高可用性，你可以选择 `primaryPreferred` 或 `secondaryPreferred`。如果你的应用程序需要低延迟，你可以选择 `nearest`。
+
 ### [Read Concern](https://www.mongodb.com/docs/manual/reference/read-concern/)
 
 Read Concern 用于指定读取操作（如查询）应返回的数据的版本。Read Concern 可以控制数据的一致性和隔离性。
@@ -104,8 +120,18 @@ Write Concern 用于指定在写操作（如插入、更新或删除）被视为
 Write Concern 的主要参数包括：
 
 - `w`：此选项指定了数据需要被写入的副本集成员数量。例如，`w: 1` 表示数据至少需要被写入一个副本集成员。
+
+  - 从 MongoDB 5.0 版本开始，默认的 write concern 是 `{ w: "majority" }`
+
+    但如果部署中包含仲裁节点，并且数据承载投票节点数不大于投票节点多数，那么默认的 write concern 是 `{ w: 1 }`
+
 - `j`：如果设置为 `true`，则写操作将等待 MongoDB 将数据写入磁盘的日志文件，以确保在 MongoDB 实例崩溃的情况下，数据不会丢失。
-- `wtimeout`：此选项指定了等待写操作完成的时间（以毫秒为单位）。如果写操作在这个时间内未完成，MongoDB 将停止等待，但不会回滚已经完成的数据写入。
+
+  - 如果 `writeConcernMajorityJournalDefault=true` (默认值)， 那么 `{ w: "majority" }` 写关注点隐含 `{ j: true }`
+
+    如果 `writeConcernMajorityJournalDefault=false`， 那么 `{ w: "majority" }` 写关注点隐含 `{ j: false }`
+
+- `wtimeout`：此选项指定了等待写操作完成的时间（以毫秒为单位）。如果写操作在这个时间内未完成，MongoDB 将停止等待，但不会回滚已经完成的数据写入。选项默认情况下是未设置的，相当于没有超时限制。
 
 以下是一个使用 Write Concern 的示例：
 
