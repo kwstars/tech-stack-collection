@@ -3,6 +3,9 @@ init-replica-sets:
 	chmod +x init-replica-sets.sh
 	./init-replica-sets.sh
 
+set-chunk-size:
+	docker-compose exec mongos1 mongosh --port 27017 --eval "use config; db.settings.updateOne(   { _id: "chunksize" },{ $set: { _id: "chunksize", value: 1 } },{ upsert: true })"
+
 add-shard1:
 	docker-compose exec mongos1 mongosh --port 27017 --eval "sh.addShard('shard1-rs/shardsrv1:27018')"
 
@@ -13,8 +16,14 @@ status:
 	docker-compose exec mongos1 mongosh --port 27017 --eval "sh.status()"
 
 insert-data:
-	docker-compose exec mongos1 mongosh --port 27017 --eval "db = db.getSiblingDB('test'); for (i = 0; i < 1000; i++) { db.data.insertOne({x: i}) }"
-
+	docker-compose exec mongos1 mongosh --port 27017 --eval "\
+	db = db.getSiblingDB('test'); \
+	var bulk = db.data.initializeUnorderedBulkOp(); \
+	for (i = 0; i < 20000; i++) { \
+		bulk.insert({x: i}); \
+	} \
+	bulk.execute(); \
+	"
 count-data:
 	docker-compose exec mongos1 mongosh --port 27017 --eval "db = db.getSiblingDB('test'); db.data.countDocuments()"
 
