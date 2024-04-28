@@ -75,3 +75,55 @@ use local
 db.runCommand({ "compact" : "oplog.rs" })
 ```
 
+## [Tag](https://www.mongodb.com/docs/manual/tutorial/configure-replica-set-tag-sets/)
+
+在 ReplicaSet 中配置 Tag 的步骤如下:
+
+1. 连接到 ReplicaSet 的主节点。
+
+2. 获取当前 Replica Set 配置:
+
+   ```javascript
+   conf = rs.conf();
+   ```
+
+3. 为每个成员添加 Tag:
+
+   ```javascript
+   conf.members[x].tags = { tag1: "value1", tag2: "value2" };
+   ```
+
+   其中 x 是成员的 `_id`。
+
+4. 重新配置 Replica Set:
+
+   ```javascript
+   rs.reconfig(conf);
+   ```
+
+5. 验证新配置是否生效:
+
+   ```javascript
+   rs.conf();
+   ```
+
+   检查 `members` 数组中各成员的 `tags` 字段。
+
+6. 根据需求使用 Tag:
+
+   - 读偏好:
+
+     ```javascript
+     // 查询 coll 集合中的所有文档时，设置读取偏好 "mode（primary，primaryPreferred，secondary，secondaryPreferred，nearest）"，并且只考虑标签 tag1 值为 value1 的副本集成员。
+     db.coll.find().readPref("mode", [{ tag1: "value1" }]);
+     ```
+
+   - 写关注:
+
+     ```javascript
+     // 添加了一个新的写关注模式。"writeConcernName" 是你为这个写关注模式定义的名称，"tag1" 是你定义的数据中心标签，int 是需要确认的副本数。
+     conf.settings.getLastErrorModes={"writeConcernName":{"tag1":int}}
+     rs.reconfig(conf)
+     db.coll.insert(...,{w:"writeConcernName"})
+     ```
+

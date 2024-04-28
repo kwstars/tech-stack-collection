@@ -3,7 +3,8 @@ step1:
 
 # https://www.mongodb.com/docs/manual/reference/method/rs.initiate/
 step2:
-	docker-compose exec mongo1 mongosh --eval "rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'mongo1:27017' }, { _id: 1, host: 'mongo2:27017' }, { _id: 2, host: 'mongo3:27017' } ] })"
+	@read -p "Enter host IP: " HOST_IP; \
+	docker-compose exec mongo1 mongosh --eval "rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: '$$HOST_IP:30001' }, { _id: 1, host: '$$HOST_IP:30002' }, { _id: 2, host: '$$HOST_IP:30003' } ] })"
 
 rs_help:
 	docker-compose exec mongo1 mongosh --eval "rs.help()"
@@ -11,7 +12,7 @@ rs_help:
 check_status:
 	docker-compose exec mongo1 mongosh --eval "rs.status()"
 
-show_rs_config:
+rs_config:
 	docker-compose exec mongo1 mongosh --eval "rs.conf()"
 
 # https://www.mongodb.com/docs/manual/reference/method/rs.remove/
