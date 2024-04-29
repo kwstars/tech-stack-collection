@@ -1,0 +1,30 @@
+services:
+  redis:
+    container_name: redis
+    image: redis:7.0
+    restart: always
+    ports:
+      - "0.0.0.0:6379:6379"
+    volumes:
+      - "redis_data:/data:rw"
+    command: [
+        "redis-server",
+        "--appendonly yes",
+        "--maxmemory 1G",
+        # "--requirepass 123456",
+        # "--maxmemory-policy volatile-lru",
+        # "--databases 64",
+      ]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+volumes:
+  redis_data:
+
+networks:
+  default:
+    name: monitoring
