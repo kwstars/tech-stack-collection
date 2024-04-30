@@ -1,4 +1,4 @@
-HOST_IP ?= 10.0.0.8
+DOCKER_COMPOSE := $(shell command -v docker-compose 2> /dev/null || echo "docker compose")
 
 prepare:
 	@echo "Please enter the host IP:"; \
@@ -9,19 +9,27 @@ prepare:
 	sed -i "s/<HOST_IP>/$$host_ip/g" sentinel.conf
 
 run:
-	docker-compose up -d
+	$(DOCKER_COMPOSE) up -d
 
-info-replication:
-	@echo "Please enter the Redis server name (redis1, redis2, redis3):"
-	@read server_name; \
-	docker-compose exec $$server_name redis-cli INFO REPLICATION
+info-replication1:
+	$(DOCKER_COMPOSE) exec redis1 redis-cli -p 16379 INFO REPLICATION
 
-info-sentinel:
-	@echo "Please enter the Redis sentinel name (sentinel1, sentinel2, sentinel3):"
-	@read sentinel_name; \
-	docker-compose exec $$sentinel_name redis-cli -p 26379 INFO SENTINEL
+info-replication2:
+	$(DOCKER_COMPOSE) exec redis2 redis-cli -p 26379 INFO REPLICATION
+
+info-replication3:
+	$(DOCKER_COMPOSE) exec redis3 redis-cli -p 36379 INFO REPLICATION
+
+info-sentinel1:
+	$(DOCKER_COMPOSE) exec sentinel3 redis-cli -p 26379 INFO SENTINEL
+
+info-sentinel2:
+	$(DOCKER_COMPOSE) exec sentinel3 redis-cli -p 26379 INFO SENTINEL
+
+info-sentinel3:
+	$(DOCKER_COMPOSE) exec sentinel3 redis-cli -p 26379 INFO SENTINEL
 
 clean:
-	docker-compose rm -sf
+	$(DOCKER_COMPOSE) rm -sf
 	rm -fr docker-compose.yaml sentinel.conf
 	docker volume rm sentinel_redis1-data sentinel_redis2-data sentinel_redis3-data

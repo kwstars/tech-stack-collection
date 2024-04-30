@@ -1,13 +1,12 @@
 services:
   redis1:
     image: redis:7.0
-    ports:
-      - "0.0.0.0:16379:6379"
+    network_mode: host
     volumes:
       - "redis1-data:/data:rw"
-    command: ["redis-server", "--appendonly yes", "--maxmemory 1G"]
+    command: ["redis-server", "--appendonly", "yes", "--port", "16379"]
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-p", "16379", "ping"]
       interval: 5s
       timeout: 3s
       retries: 3
@@ -18,19 +17,22 @@ services:
       redis1:
         condition: service_healthy
     image: redis:7.0
-    ports:
-      - "0.0.0.0:26379:6379"
+    network_mode: host
     volumes:
       - "redis2-data:/data:rw"
     command:
       [
         "redis-server",
-        "--appendonly yes",
-        "--maxmemory 1G",
-        "--slaveof <HOST_IP> 16379",
+        "--appendonly",
+        "yes",
+        "--port",
+        "26379",
+        "--slaveof",
+        "<HOST_IP>",
+        "16379",
       ]
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-p", "26379", "ping"]
       interval: 5s
       timeout: 3s
       retries: 3
@@ -41,19 +43,22 @@ services:
       redis1:
         condition: service_healthy
     image: redis:7.0
-    ports:
-      - "0.0.0.0:36379:6379"
+    network_mode: host
     volumes:
       - "redis3-data:/data:rw"
     command:
       [
         "redis-server",
-        "--appendonly yes",
-        "--maxmemory 1G",
-        "--slaveof <HOST_IP> 16379",
+        "--appendonly",
+        "yes",
+        "--port",
+        "36379",
+        "--slaveof",
+        "<HOST_IP>",
+        "16379",
       ]
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-p", "36379", "ping"]
       interval: 5s
       timeout: 3s
       retries: 3
