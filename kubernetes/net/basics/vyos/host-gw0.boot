@@ -35,7 +35,7 @@ system {
     login {
         user vyos {
             authentication {
-                encrypted-password $6$QxPS.uk6mfo$9QBSo8u1FkH16gMyAvhus6fu3LOzvLR929.82m3tiHFAxTtIkhaZSwssSgzt4v4dGAL8rhvQxTg0oAG9/q11h/
+                encrypted-password $6$6MDHkow/GQ0RuguS$ba7PNU6xuG.TlpxOmKtpA5cM7/AZtnPtJzLwjlsmAPYVEVb.PZc98u8bhpGSu/HL/ICHFxEgdbcNEPS9ru9Po/
                 plaintext-password ""
             }
             level admin

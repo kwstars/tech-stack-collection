@@ -1,3 +1,13 @@
+change-vbox-path:
+	@read -p "Enter virtualbox path: " path; \
+	current_path=$$(VBoxManage list systemproperties | grep "Default machine folder" | cut -d ':' -f 2 | xargs); \
+	if [ ! -d $$path ]; then sudo mkdir -p $$path; sudo chown $(shell id -un):$(shell id -un) $$path; fi; \
+	if [ "$$current_path" != "$$path" ]; then \
+		VBoxManage setproperty machinefolder $$path; \
+		sudo systemctl restart virtualbox; \
+	fi
+	VBoxManage list systemproperties | grep "Default machine folder"
+
 up:
 	vagrant up
 
@@ -26,6 +36,13 @@ bridge-check:
 
 veth-check:
 	sudo ethtools -S net0
+
+tcpdump:
+	@echo "Available interfaces:"
+	@ip -o link show | awk -F': ' '{print $$1,$$2}'
+	@read -p "Enter interface name: " interface; \
+	read -p "Enter output file name: " filename; \
+	sudo tcpdump -pne -i $$interface -w ./$$filename.pcap
 
 clean-bridge:
 	sudo clab destroy -t bridge.yaml

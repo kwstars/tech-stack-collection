@@ -5,12 +5,12 @@ topology:
       kind: bridge
     server1:
       kind: linux
-      image: travelping/nettools
+      image: kwstars/nettools
       exec:
         - ip addr add 10.1.5.10/24 dev net0
     server2:
       kind: linux
-      image: travelping/nettools
+      image: kwstars/nettools
       exec:
         - ip addr add 10.1.5.11/24 dev net0
   links:
