@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - "docker-nettools/**"
+  workflow_dispatch:
 
 jobs:
   docker:
@@ -25,5 +26,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
+          context: ./docker-nettools
           push: true
+          platforms: linux/amd64,linux/arm64
           tags: kwstars/nettools:latest
