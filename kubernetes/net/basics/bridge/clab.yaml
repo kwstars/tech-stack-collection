@@ -1,0 +1,20 @@
+name: bridge
+topology:
+  nodes:
+    br0:
+      kind: bridge
+    server1:
+      kind: linux
+      image: wbitt/network-multitool
+      exec:
+        - ip addr add 10.0.0.11/24 dev eth1
+        - ip link set eth1 up
+    server2:
+      kind: linux
+      image: wbitt/network-multitool
+      exec:
+        - ip addr add 10.0.0.12/24 dev eth1
+        - ip link set eth1 up
+  links:
+    - endpoints: ["br0:eth1", "server1:eth1"]
+    - endpoints: ["br0:eth2", "server2:eth1"]

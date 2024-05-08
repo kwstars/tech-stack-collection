@@ -1,3 +1,4 @@
+
 change-vbox-path:
 	@read -p "Enter virtualbox path: " path; \
 	current_path=$$(VBoxManage list systemproperties | grep "Default machine folder" | cut -d ':' -f 2 | xargs); \
@@ -10,6 +11,7 @@ change-vbox-path:
 
 up:
 	vagrant up
+	vagrant reload
 
 ssh:
 	vagrant ssh
@@ -20,22 +22,35 @@ status:
 destroy:
 	vagrant destroy
 
+.PHONY: bridge
 bridge:
-	sudo brctl addbr br-poo10
-	sudo ifconfig br-poo10 up
-	sudo clab deploy -t bridge.yaml
+	if ! ip link show br0 > /dev/null 2>&1; then sudo ip link add name br0 type bridge; sudo ip link set br0 up; fi
+	sudo clab deploy -t bridge/clab.yaml
+	ip link show type bridge
+	bridge link show dev eth1
+	docker exec -it clab-bridge-server1 ip link show eth1
+	brctl showmacs br0
 
+.PHONY: routing
 routing:
-	sudo clab deploy -t routing.yaml
+	@sudo clab deploy -t routing/clab.yaml
 
+.PHONY: veth-pairs
+veth-pairs:
+	@sudo clab deploy -t veth-pairs/clab.yaml
+
+veth-pairs-manual:
+	@sudo chmod +x veth-pairs-manual.sh
+	bash veth-pairs-manual.sh
+
+.PHONY: vxlan
+# docker exec -it clab-host-gw-gw2 bash -c 'cd /vagrant_data/; tcpdump -pen -i eth2 -w gw2-eth2-vxlan.pcap'
+vxlan:
+	@sudo clab deploy -t vxlan/clab.yaml
+
+.PHONY: host-gw
 host-gw:
-	sudo clab deploy -t host-gw.yaml
-
-bridge-check:
-	brctl showmacs
-
-veth-check:
-	sudo ethtools -S net0
+	sudo clab deploy -t host-gw/clab.yaml
 
 tcpdump:
 	@echo "Available interfaces:"
@@ -45,18 +60,21 @@ tcpdump:
 	sudo tcpdump -pne -i $$interface -w ./$$filename.pcap
 
 clean-bridge:
-	sudo clab destroy -t bridge.yaml
-	sudo ifconfig br-poo10 down
-	sudo brctl delbr br-poo10
+	@if sudo clab inspect --all | grep -q 'bridge'; then sudo clab destroy -t bridge/clab.yaml; fi
+	@if ip link show br0 > /dev/null 2>&1; then sudo ip link set br0 down; sudo ip link del br0; fi
 
 clean-routing:
-	sudo clab destroy -t routing.yaml
+	@if sudo clab inspect --all | grep -q 'routing'; then sudo clab destroy -t routing/clab.yaml; fi
 
-clean-veth-pair:
-	sudo clab destroy -t veth-pair.yaml
+clean-veth-pairs:
+	@if sudo clab inspect --all | grep -q 'veth-pair'; then sudo clab destroy -t veth-pairs/clab.yaml; fi
+	@if sudo ip netns list | grep -q 'ns1'; then sudo ip netns del ns1; fi
+	@if sudo ip netns list | grep -q 'ns2'; then sudo ip netns del ns2; fi
 
-clean-manual-veth-pair:
-	sudo ip netns del ns1
-	sudo ip netns del ns2
+clean-host-gw:
+	@if sudo clab inspect --all | grep -q 'host-gw'; then sudo clab destroy -t host-gw/clab.yaml; fi
 
-clean: clean-bridge clean-veth-pair clean-manual-veth-pair
+clean-vxlan:
+	@if sudo clab inspect --all | grep -q 'vxlan'; then sudo clab destroy -t vxlan/clab.yaml; fi
+
+clean: clean-bridge clean-routing clean-veth-pairs clean-host-gw clean-vxlan
