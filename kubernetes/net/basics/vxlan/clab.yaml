@@ -1,9 +1,10 @@
+# server1 (10.1.5.10/24) <--> (eth1:10.1.5.1/24) gw1 (eth2:172.12.1.10/24) <--> (eth2:172.12.1.11/24) gw2 (eth1:10.1.8.1/24) <--> server2 (10.1.8.10/24)
 name: vxlan
 topology:
   nodes:
     gw1:
       kind: linux
-      image: wbitt/network-multitool
+      image: wbitt/network-multitool:fedora
       exec:
         - sysctl -w net.ipv4.ip_forward=1
         - ip addr add 10.1.5.1/24 dev eth1
@@ -16,7 +17,7 @@ topology:
         - .:/vagrant_data
     gw2:
       kind: linux
-      image: wbitt/network-multitool
+      image: wbitt/network-multitool:fedora
       exec:
         - sysctl -w net.ipv4.ip_forward=1
         - ip addr add 10.1.8.1/24 dev eth1

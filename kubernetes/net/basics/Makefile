@@ -44,13 +44,17 @@ veth-pairs-manual:
 	bash veth-pairs-manual.sh
 
 .PHONY: vxlan
-# docker exec -it clab-host-gw-gw2 bash -c 'cd /vagrant_data/; tcpdump -pen -i eth2 -w gw2-eth2-vxlan.pcap'
+# docker exec -it clab-vxlan-gw2 bash -c 'cd /vagrant_data/; tcpdump -pen -i eth2 -w gw2-eth2-vxlan.pcap'
 vxlan:
 	@sudo clab deploy -t vxlan/clab.yaml
 
 .PHONY: host-gw
 host-gw:
-	sudo clab deploy -t host-gw/clab.yaml
+	@sudo clab deploy -t host-gw/clab.yaml
+
+.PHONY: ipsec
+ipsec:
+	@sudo clab deploy -t ipsec/clab.yaml
 
 tcpdump:
 	@echo "Available interfaces:"
@@ -77,4 +81,13 @@ clean-host-gw:
 clean-vxlan:
 	@if sudo clab inspect --all | grep -q 'vxlan'; then sudo clab destroy -t vxlan/clab.yaml; fi
 
-clean: clean-bridge clean-routing clean-veth-pairs clean-host-gw clean-vxlan
+clean-ipsec:
+	@if sudo clab inspect --all | grep -q 'ipsec'; then sudo clab destroy -t ipsec/clab.yaml; fi
+
+clean: \
+	clean-bridge \
+	clean-routing \
+	clean-veth-pairs \
+	clean-host-gw \
+	clean-vxlan \
+	clean-ipsec
