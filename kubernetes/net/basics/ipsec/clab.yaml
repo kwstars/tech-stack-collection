@@ -16,7 +16,7 @@ topology:
         - ip xfrm policy add src 10.1.8.0/24 dst 10.1.5.0/24 dir in tmpl src 172.12.1.11 dst 172.12.1.10 proto esp reqid 1 mode tunnel
         - ip xfrm policy add src 10.1.8.0/24 dst 10.1.5.0/24 dir fwd tmpl src 172.12.1.11 dst 172.12.1.10 proto esp reqid 1 mode tunnel
       binds:
-        - .:/vagrant_data
+        - .:/data
     gw2:
       kind: linux
       image: wbitt/network-multitool
@@ -31,7 +31,7 @@ topology:
         - ip xfrm policy add src 10.1.5.0/24 dst 10.1.8.0/24 dir in tmpl src 172.12.1.10 dst 172.12.1.11 proto esp reqid 1 mode tunnel
         - ip xfrm policy add src 10.1.5.0/24 dst 10.1.8.0/24 dir fwd tmpl src 172.12.1.10 dst 172.12.1.11 proto esp reqid 1 mode tunnel
       binds:
-        - .:/vagrant_data
+        - .:/data
     server1:
       kind: linux
       image: wbitt/network-multitool
@@ -39,7 +39,7 @@ topology:
         - ip addr add 10.1.5.10/24 dev net0
         - ip route replace default via 10.1.5.1
       binds:
-        - .:/vagrant_data
+        - .:/data
     server2:
       kind: linux
       image: wbitt/network-multitool
@@ -47,7 +47,7 @@ topology:
         - ip addr add 10.1.8.10/24 dev net0
         - ip route replace default via 10.1.8.1
       binds:
-        - .:/vagrant_data
+        - .:/data
   links:
     - endpoints: ["gw1:eth1", "server1:net0"]
     - endpoints: ["gw2:eth1", "server2:net0"]

@@ -1,3 +1,6 @@
+.PHONY: ipsec vxlan ipip host-gw gre wireguard
+
+TARGETS = ipsec vxlan ipip host-gw gre wireguard
 
 change-vbox-path:
 	@read -p "Enter virtualbox path: " path; \
@@ -43,25 +46,14 @@ veth-pairs-manual:
 	@sudo chmod +x veth-pairs-manual.sh
 	bash veth-pairs-manual.sh
 
-.PHONY: vxlan
-# docker exec -it clab-vxlan-gw2 bash -c 'cd /vagrant_data/; tcpdump -pen -i eth2 -w gw2-eth2-vxlan.pcap'
-vxlan:
-	@sudo clab deploy -t vxlan/clab.yaml
-
-.PHONY: host-gw
-host-gw:
-	@sudo clab deploy -t host-gw/clab.yaml
-
-.PHONY: ipsec
-ipsec:
-	@sudo clab deploy -t ipsec/clab.yaml
-
-tcpdump:
-	@echo "Available interfaces:"
-	@ip -o link show | awk -F': ' '{print $$1,$$2}'
-	@read -p "Enter interface name: " interface; \
-	read -p "Enter output file name: " filename; \
-	sudo tcpdump -pne -i $$interface -w ./$$filename.pcap
+$(TARGETS):
+	@sudo clab deploy -t $@/clab.yaml
+	@if [ -f $@/gw1-eth2.pcap ]; then rm -f $@/gw1-eth2.pcap; fi
+	@if [ -f $@/gw2-eth2.pcap ]; then rm -f $@/gw2-eth2.pcap; fi
+	docker exec -d clab-$@-gw1 bash -c 'tcpdump -pen -i eth2 -w /data/gw1-eth2.pcap'
+	docker exec -d clab-$@-gw2 bash -c 'tcpdump -pen -i eth2 -w /data/gw2-eth2.pcap'
+	docker exec -d clab-$@-server1 bash -c 'curl 10.1.8.10'
+	docker exec -d clab-$@-server2 bash -c 'curl 10.1.5.10'
 
 clean-bridge:
 	@if sudo clab inspect --all | grep -q 'bridge'; then sudo clab destroy -t bridge/clab.yaml; fi
@@ -75,19 +67,12 @@ clean-veth-pairs:
 	@if sudo ip netns list | grep -q 'ns1'; then sudo ip netns del ns1; fi
 	@if sudo ip netns list | grep -q 'ns2'; then sudo ip netns del ns2; fi
 
-clean-host-gw:
-	@if sudo clab inspect --all | grep -q 'host-gw'; then sudo clab destroy -t host-gw/clab.yaml; fi
-
-clean-vxlan:
-	@if sudo clab inspect --all | grep -q 'vxlan'; then sudo clab destroy -t vxlan/clab.yaml; fi
-
-clean-ipsec:
-	@if sudo clab inspect --all | grep -q 'ipsec'; then sudo clab destroy -t ipsec/clab.yaml; fi
+clean-%:
+	@echo "Cleaning $*"
+	@if sudo clab inspect --all | grep -q '$*'; then sudo clab destroy -t $*/clab.yaml; fi
 
 clean: \
+	$(addprefix clean-, $(TARGETS)) \
 	clean-bridge \
 	clean-routing \
-	clean-veth-pairs \
-	clean-host-gw \
-	clean-vxlan \
-	clean-ipsec
+	clean-veth-pairs
