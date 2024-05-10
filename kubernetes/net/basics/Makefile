@@ -48,8 +48,6 @@ veth-pairs-manual:
 
 $(TARGETS):
 	@sudo clab deploy -t $@/clab.yaml
-	@if [ -f $@/gw1-eth2.pcap ]; then rm -f $@/gw1-eth2.pcap; fi
-	@if [ -f $@/gw2-eth2.pcap ]; then rm -f $@/gw2-eth2.pcap; fi
 	docker exec -d clab-$@-gw1 bash -c 'tcpdump -pen -i eth2 -w /data/gw1-eth2.pcap'
 	docker exec -d clab-$@-gw2 bash -c 'tcpdump -pen -i eth2 -w /data/gw2-eth2.pcap'
 	docker exec -d clab-$@-server1 bash -c 'curl 10.1.8.10'
@@ -71,8 +69,5 @@ clean-%:
 	@echo "Cleaning $*"
 	@if sudo clab inspect --all | grep -q '$*'; then sudo clab destroy -t $*/clab.yaml; fi
 
-clean: \
-	$(addprefix clean-, $(TARGETS)) \
-	clean-bridge \
-	clean-routing \
-	clean-veth-pairs
+clean: $(addprefix clean-, $(TARGETS)) clean-bridge clean-routing clean-veth-pairs
+	find . -name "*.pcap" -type f -delete

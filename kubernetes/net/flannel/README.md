@@ -14,8 +14,6 @@
 
 ### VXLAN
 
-- 同主机 Pod 之间通信
-
 #### 跨主机 Pod 之间通信
 
 从控制节点的 Pod 到 worker 节点的流量
@@ -77,37 +75,6 @@ $ docker exec -it flannel-vxlan-control-plane ss -tnulp | grep 8472
 Netid          State           Recv-Q          Send-Q                   Local Address:Port                      Peer Address:Port          Process
 udp            UNCONN          0               0                              0.0.0.0:8472                           0.0.0.0:*
 ```
-
-### UDP
-
-### host-gw
-
-## 配置
-
-1. **hostPath**：这是 Kubernetes 中的一种 Volume 类型，它允许将宿主机的文件系统上的文件或目录挂载到 Pod 中的容器里。在这个配置文件中，有几个 hostPath 需要特别注意：
-
-   - `/run/flannel`：Flannel 使用这个路径存储运行时数据。
-   - `/opt/cni/bin`：这个路径通常用于存储 CNI 插件的二进制文件。
-   - `/etc/cni/net.d`：这个路径通常用于存储 CNI 配置文件。
-   - `/run/xtables.lock`：这个文件用于同步访问 iptables，防止并发操作 iptables 时出现问题。
-
-   需要确保这些路径在宿主机上存在，且有适当的读写权限。
-
-2. **configMap**：这是 Kubernetes 中的一种资源类型，它允许将配置数据存储在集群中，然后可以在 Pod 中使用。在这个配置文件中，`kube-flannel-cfg` 是一个 ConfigMap 的名称，它应该包含了 Flannel 的配置信息。需要确保这个 ConfigMap 已经在的 Kubernetes 集群中创建。
-
-   - cni-conf.json：这部分配置了 CNI (Container Network Interface) 插件。CNI 插件是用于配置和管理容器的网络接口的。
-     - `"name": "cbr0"`：定义了 CNI 网络的名称。
-     - `"cniVersion": "0.3.1"`：指定了 CNI 规范的版本。
-     - `"plugins"`：定义了一组 CNI 插件。这里使用了两个插件：Flannel 和 portmap。
-       - Flannel 插件用于创建覆盖网络，使得跨主机的容器可以互相通信。
-         1. **"hairpinMode": true**：启用了 Hairpin Mode。在 Kubernetes 中，Hairpin Mode 允许一个 Pod 通过 Service 的 Cluster IP 或者 NodePort 访问自己的服务，即使这个请求在同一个 Node 上。这对于一些需要 Pod 自我通信的应用是非常有用的。
-         2. **"isDefaultGateway": true**：设置 Flannel 作为默认网关。这意味着所有未指定路由的流量都将通过 Flannel 网络发送。这对于跨主机的容器通信是必要的。
-       - portmap 插件用于支持容器的端口映射，使得容器可以从主机网络访问。
-   - net-conf.json：这部分配置了 Flannel 网络。
-     - `"Network": "10.244.0.0/16"`：定义了 Flannel 网络的 IP 地址范围。
-     - `"Backend": {"Type": "vxlan"}`：定义了 Flannel 网络的后端类型。这里使用了 VXLAN，它是一种覆盖网络技术，可以在物理网络上创建虚拟的 Layer 2 网络。
-
-3. **Volume 名称**：每个 Volume 都有一个名称，例如 `run`、`cni-plugin`、`cni`、`flannel-cfg` 和 `xtables-lock`。这些名称在 Pod 的容器中用于引用对应的 Volume。需要确保在 Pod 的容器配置中正确地使用了这些名称。
 
 ## 问题
 

@@ -1,9 +1,9 @@
-.PHONY: udp vxlan-default vxlan-directrouting
+.PHONY: udp vxlan-default vxlan-directrouting ipip host-gw ipsec wireguard
 
-TARGETS = udp vxlan-default vxlan-directrouting
+TARGETS = udp vxlan-default vxlan-directrouting ipip host-gw ipsec wireguard
 
 $(TARGETS):
-	bash $@/kind.sh
+	bash $@/run.sh
 
 mykindest:
 	docker build -t mykindest/node:v1.28.7 .
@@ -23,3 +23,7 @@ clean-flannel-vxlan-directrouting:
 clean: clean-pcap clean-flannel-vxlan-directrouting
 	@sudo kind delete cluster --name flannel-udp
 	@sudo kind delete cluster --name flannel-vxlan-default
+	@sudo kind delete cluster --name flannel-ipip
+	@sudo kind delete cluster --name flannel-host-gw
+	@sudo kind delete cluster --name flannel-ipsec
+	@sudo kind delete cluster --name flannel-wireguard
