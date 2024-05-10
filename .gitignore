@@ -182,3 +182,4 @@ dist
 .vagrant
 clab-*
 *.bak
+*.pcap

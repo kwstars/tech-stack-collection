@@ -26,6 +26,15 @@ cat <<EOF | sudo tee /etc/docker/daemon.json
 EOF
 sudo systemctl restart docker
 
+# Install kubectl
+curl -fsSL https://mirrors.aliyun.com/kubernetes-new/core/stable/v1.28/deb/Release.key |
+  sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://mirrors.aliyun.com/kubernetes-new/core/stable/v1.28/deb/ /" |
+  sudo tee /etc/apt/sources.list.d/kubernetes.list
+sudo apt-get update -qq && sudo apt-get install -y kubectl
+
 # Download Docker completion script
-sudo curl -L https://raw.githubusercontent.com/docker/cli/master/contrib/completion/bash/docker -o /etc/bash_completion.d/docker
+# sudo curl -L https://raw.githubusercontent.com/docker/cli/master/contrib/completion/bash/docker -o /etc/bash_completion.d/docker
 clab completion bash | sudo tee /etc/bash_completion.d/clab >/dev/null
+kind completion bash | sudo tee /etc/bash_completion.d/kind >/dev/null
+kubectl completion bash | sudo tee /etc/bash_completion.d/kubectl >/dev/null
