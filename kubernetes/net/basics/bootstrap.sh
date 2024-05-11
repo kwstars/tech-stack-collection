@@ -33,6 +33,10 @@ echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://mirro
   sudo tee /etc/apt/sources.list.d/kubernetes.list
 sudo apt-get update -qq && sudo apt-get install -y kubectl
 
+# Calico
+sudo curl -L https://github.com/projectcalico/calico/releases/download/v3.27.3/calicoctl-linux-amd64 -o /usr/local/bin/calicoctl
+sudo chmod +x /usr/local/bin/calicoctl
+
 # Download Docker completion script
 # sudo curl -L https://raw.githubusercontent.com/docker/cli/master/contrib/completion/bash/docker -o /etc/bash_completion.d/docker
 clab completion bash | sudo tee /etc/bash_completion.d/clab >/dev/null

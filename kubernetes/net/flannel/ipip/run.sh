@@ -84,5 +84,7 @@ spec:
       nodePort: 32000
 EOF
 
+kubectl wait --timeout=100s --for=condition=Ready=true pods --all -A
+
 # Captrue packet
 docker exec -d flannel-ipip-control-plane bash -c "tcpdump -pen -i eth0 'ip proto 4' -w /data/control-eth0.pcap"

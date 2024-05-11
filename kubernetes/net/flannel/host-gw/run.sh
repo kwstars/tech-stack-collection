@@ -86,5 +86,7 @@ EOF
 # Output node information
 kubectl get nodes -o wide
 
+kubectl wait --timeout=100s --for=condition=Ready=true pods --all -A
+
 # Captrue packet
 docker exec -d flannel-host-gw-control-plane bash -c "tcpdump -pen -i eth0 -w /data/control-eth0.pcap"

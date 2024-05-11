@@ -20,5 +20,7 @@ kubectl apply -f ./flannel.yaml
 # 4. Run a test pod
 kubectl apply -f ./test-pod.yaml
 
+kubectl wait --timeout=100s --for=condition=Ready=true pods --all -A
+
 # Captrue packet
 docker exec -d flannel-udp-control-plane bash -c "tcpdump -pen -i eth0 -w /data/control-eth0.pcap"

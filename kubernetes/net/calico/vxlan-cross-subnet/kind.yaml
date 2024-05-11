@@ -1,0 +1,62 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+networking:
+  disableDefaultCNI: true
+  podSubnet: "10.244.0.0/16"
+nodes:
+  - role: control-plane
+    extraMounts:
+      - hostPath: /opt/cni/bin/
+        containerPath: /opt/cni/bin
+      - hostPath: .
+        containerPath: /data
+    kubeadmConfigPatches:
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-ip: 10.1.5.10
+            node-labels: "rack=rack0"
+  - role: worker
+    extraMounts:
+      - hostPath: /opt/cni/bin/
+        containerPath: /opt/cni/bin
+      - hostPath: .
+        containerPath: /data
+    kubeadmConfigPatches:
+      - |
+        kind: JoinConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-ip: 10.1.5.11
+            node-labels: "rack=rack0"
+  - role: worker
+    extraMounts:
+      - hostPath: /opt/cni/bin/
+        containerPath: /opt/cni/bin
+      - hostPath: .
+        containerPath: /data
+    kubeadmConfigPatches:
+      - |
+        kind: JoinConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-ip: 10.1.8.10
+            node-labels: "rack=rack1"
+  - role: worker
+    extraMounts:
+      - hostPath: /opt/cni/bin/
+        containerPath: /opt/cni/bin
+      - hostPath: .
+        containerPath: /data
+    kubeadmConfigPatches:
+      - |
+        kind: JoinConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-ip: 10.1.8.11
+            node-labels: "rack=rack1"
+containerdConfigPatches:
+  - |-
+    [plugins."io.containerd.grpc.v1.cri".registry.mirrors."10.0.0.10:5000"]
+      endpoint = ["http://10.0.0.10:5000"]

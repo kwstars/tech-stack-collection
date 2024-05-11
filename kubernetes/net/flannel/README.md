@@ -1,6 +1,10 @@
 ## [Flannel 支持的后端（backends）](https://github.com/flannel-io/flannel/blob/master/Documentation/backends.md)
 
 1. **VXLAN**：使用内核中的 VXLAN 来封装数据包。
+
+   - 直接路由（Direct Routing）：在这种模式下，当目标 Pod 位于同一节点时，数据包直接通过节点的网络发送，不需要进行 VXLAN 封装。当目标 Pod 位于不同节点时，数据包会被封装到 VXLAN 中，然后通过节点的网络发送到目标节点，最后在目标节点上解封装并发送到目标 Pod。这种模式的优点是性能较好，因为在同一节点上的 Pod 之间的通信不需要进行 VXLAN 封装和解封装。但是，这种模式需要节点的网络支持直接路由。
+   - 隧道（Tunneling）：在这种模式下，无论目标 Pod 是否位于同一节点，数据包都会被封装到 VXLAN 中，然后通过节点的网络发送。如果目标 Pod 位于同一节点，数据包会在发送前被封装到 VXLAN 中，然后立即在同一节点上解封装并发送到目标 Pod。如果目标 Pod 位于不同节点，数据包会被封装到 VXLAN 中，然后通过节点的网络发送到目标节点，最后在目标节点上解封装并发送到目标 Pod。这种模式的优点是兼容性较好，因为它不需要节点的网络支持直接路由。但是，这种模式的性能可能较差，因为所有的通信都需要进行 VXLAN 封装和解封装。
+
 2. **host-gw**：使用 host-gw 创建到子网的 IP 路由，通过远程机器的 IP。这需要主机之间具有直接的 layer2 连接。
 3. **WireGuard**：使用内核中的 WireGuard 来封装和加密数据包。
 4. **UDP**：仅在网络和内核阻止使用 VXLAN 或 host-gw 时使用 UDP 进行调试。
@@ -75,6 +79,21 @@ $ docker exec -it flannel-vxlan-control-plane ss -tnulp | grep 8472
 Netid          State           Recv-Q          Send-Q                   Local Address:Port                      Peer Address:Port          Process
 udp            UNCONN          0               0                              0.0.0.0:8472                           0.0.0.0:*
 ```
+
+### Calico
+
+在网络术语中，路由（Route）和转发数据库（Forwarding Database, FDB）是两个不同的概念，它们在网络设备中起着不同的作用。
+
+1. 路由（Route）：路由是网络层（OSI 模型的第三层）的概念，它描述了数据包从源地址到目的地址的路径。路由表是存储路由信息的数据结构，它包含了目的网络或主机的地址，下一跳地址，以及到达目的地的成本等信息。路由器使用路由表来决定如何转发数据包。
+
+2. 转发数据库（FDB）：FDB 是数据链路层（OSI 模型的第二层）的概念，它通常在交换机中使用。FDB 存储了 MAC 地址到交换机端口的映射，交换机使用 FDB 来决定如何转发帧。
+
+简单来说，路由和 FDB 的关系是：路由决定了数据包在网络层的路径，而 FDB 决定了帧在数据链路层的路径。在一个典型的网络设备中，路由和 FDB 会一起工作，确保数据能够从源地址正确地传输到目的地址。
+
+1. IPIP
+2. IPIP Cross subnet
+3. [VXLAN](https://docs.tigera.io/calico/latest/getting-started/kubernetes/self-managed-onprem/config-options#switching-from-ip-in-ip-to-vxlan)
+4. VXLAN Cross subne
 
 ## 问题
 
