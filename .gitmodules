@@ -1,0 +1,3 @@
+[submodule "kubernetes/argo/cd/demo"]
+	path = kubernetes/argo/cd/demo
+	url = https://github.com/kwstars/argocd-demo
