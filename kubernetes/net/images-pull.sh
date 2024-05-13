@@ -2,9 +2,9 @@
 
 # 检查 insecure-registries 是否已经包含目标地址
 # sudo tee /etc/docker/daemon.json <<EOF
-# {
-#   "insecure-registries" : ["10.0.0.10:5000"]
-# }
+{
+  "insecure-registries" : ["10.0.0.10:5000"]
+}
 # EOF
 
 # 定义镜像仓库地址 mcr.microsoft.com/oss/kubernetes
@@ -13,6 +13,8 @@ target="10.0.0.10:5000"
 
 # Kind 镜像
 # kubectl get pods --all-namespaces -o jsonpath="{..image}" | tr -s '[[:space:]]' '\n' | sort | uniq
+# for name in $(docker image ls | awk 'NR>1 {print $1":"$2}'); do newName=${name//\//\-}; docker save $name | gzip > "$newName.tar.gz"; done
+# for name in $(ls); do docker load -i $name; done
 images=(
   "kube-apiserver-amd64:v1.28.7"
   "kube-apiserver:v1.28.7"

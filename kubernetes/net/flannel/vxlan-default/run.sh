@@ -87,4 +87,4 @@ EOF
 kubectl wait --timeout=100s --for=condition=Ready=true pods --all -A
 
 # Captrue packet
-docker exec -d flannel-vxlan-control-plane bash -c "tcpdump -pen -i eth0 -w /data/control-eth0.pcap"
+docker exec -d flannel-vxlan-default-control-plane bash -c "tcpdump -pen -i eth0 -w /data/control-eth0.pcap"
