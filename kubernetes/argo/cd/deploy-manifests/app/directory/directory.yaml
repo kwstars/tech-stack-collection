@@ -1,0 +1,25 @@
+# https://argo-cd.readthedocs.io/en/stable/user-guide/directory/
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: directory
+  namespace: argocd
+spec:
+  destination:
+    namespace: default
+    server: https://kubernetes.default.svc
+  project: default
+  source:
+    path: directory
+    directory:
+      recurse: false
+      exclude: "{config.json,env-usw2/*}"
+      include: "*.yaml"
+    repoURL: https://github.com/kwstars/argocd-demo
+    targetRevision: HEAD
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

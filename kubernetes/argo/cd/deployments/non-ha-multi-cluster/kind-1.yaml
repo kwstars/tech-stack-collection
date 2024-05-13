@@ -7,16 +7,16 @@ nodes:
         kind: InitConfiguration
         # imageRepository: registry.aliyuncs.com/google_containers
         networking:
-          serviceSubnet: 10.0.0.0/16
+          # serviceSubnet: 10.0.0.0/16
           apiServerAddress: "0.0.0.0"
         nodeRegistration:
           kubeletExtraArgs:
             node-labels: "ingress-ready=true"
-        ---
-        kind: KubeletConfiguration
-        cgroupDriver: systemd
-        cgroupRoot: /kubelet
-        failSwapOn: false
+        # ---
+        # kind: KubeletConfiguration
+        # cgroupDriver: systemd
+        # cgroupRoot: /kubelet
+        # failSwapOn: false
     extraPortMappings:
       - containerPort: 80
         hostPort: 80
@@ -24,8 +24,8 @@ nodes:
         hostPort: 443
       - containerPort: 6443
         hostPort: 6443
-  - role: worker
-  - role: worker
+  # - role: worker
+  # - role: worker
 containerdConfigPatches:
   - |-
     [plugins."io.containerd.grpc.v1.cri".registry.mirrors."10.0.0.10:5000"]
