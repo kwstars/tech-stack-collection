@@ -1,0 +1,23 @@
+# kubectl run nginx1 --image nginx --labels mylabel=foo
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx1
+  labels:
+    mylabel: foo
+spec:
+  containers:
+    - name: nginx
+      image: nginx
+---
+# kubectl run nginx2 --image nginx --labels mylabel=bar
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx2
+  labels:
+    mylabel: bar
+spec:
+  containers:
+    - name: nginx
+      image: nginx

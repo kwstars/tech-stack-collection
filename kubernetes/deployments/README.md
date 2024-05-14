@@ -1,6 +1,6 @@
 Kubernetes 中有多种部署方式，以下是一些常见的选项：
 
-1. **手动部署**：可以在自己的硬件或云服务上手动部署 Kubernetes。这种方式需要自己管理和维护 Kubernetes 集群，包括安装、配置、升级和故障排查等。这种方式提供了最大的灵活性，但也需要更多的运维工作。
+1. **[手动部署](https://github.com/cby-chen/Kubernetes)**：可以在自己的硬件或云服务上手动部署 Kubernetes。这种方式需要自己管理和维护 Kubernetes 集群，包括安装、配置、升级和故障排查等。这种方式提供了最大的灵活性，但也需要更多的运维工作。
 
 2. **[使用安装工具](https://kubernetes.io/docs/setup/production-environment/tools/)**：有很多工具可以帮助自动化部署 Kubernetes，如 kops、kubespray、rancher 和 kubeadmin 等。这些工具可以帮助自动化安装和配置 Kubernetes，减少手动操作的复杂性。
 

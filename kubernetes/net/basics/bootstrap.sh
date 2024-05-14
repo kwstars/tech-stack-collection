@@ -41,4 +41,6 @@ sudo chmod +x /usr/local/bin/calicoctl
 # sudo curl -L https://raw.githubusercontent.com/docker/cli/master/contrib/completion/bash/docker -o /etc/bash_completion.d/docker
 clab completion bash | sudo tee /etc/bash_completion.d/clab >/dev/null
 kind completion bash | sudo tee /etc/bash_completion.d/kind >/dev/null
-kubectl completion bash | sudo tee /etc/bash_completion.d/kubectl >/dev/null
+# https://kubernetes.io/docs/reference/kubectl/quick-reference/
+source <(kubectl completion bash)                                        # set up autocomplete in bash into the current shell, bash-completion package should be installed first.
+echo "source <(kubectl completion bash)" >/etc/bash_completion.d/kubectl # add autocomplete permanently to your bash shell.

@@ -1,0 +1,30 @@
+# https://github.com/kubernetes/apiextensions-apiserver/blob/03da840c7678e81d06a5c0285ec0fa56456a6546/pkg/apis/apiextensions/types.go#L379-L389
+apiVersion: apiextensions.k8s.io/v1 # The group and version of the CRD resource
+kind: CustomResourceDefinition # The kind of the CRD resource. https://github.com/kubernetes/apiextensions-apiserver/blob/03da840c7678e81d06a5c0285ec0fa56456a6546/pkg/apis/apiextensions/types.go#L381-L389
+metadata:
+  name: myresources.mygroup.example.com #  The complete name of the new resource, including its group
+spec: # https://github.com/kubernetes/apiextensions-apiserver/blob/03da840c7678e81d06a5c0285ec0fa56456a6546/pkg/apis/apiextensions/types.go#L33-L88
+  group: mygroup.example.com #  The group the new resource belongs to
+  scope: Namespaced # The new resource can be created in specific namespaces
+  names: # https://github.com/kubernetes/apiextensions-apiserver/blob/03da840c7678e81d06a5c0285ec0fa56456a6546/pkg/apis/apiextensions/types.go#L259-L275
+    plural: myresources # The plural name of the new resource, used in the path to access this new resource
+    singular: myresource # The singular name of the resource, you can use kubectl get myresource
+    shortNames: # Short names of the new resource, you can use kubectl get my, kubectl get myres
+      - my
+      - myres
+    kind: MyResource
+    categories:
+      - all # Adds the resource to the category all; resources of this kind will appear when running kubectl get all
+  versions: # https://github.com/kubernetes/apiextensions-apiserver/blob/03da840c7678e81d06a5c0285ec0fa56456a6546/pkg/apis/apiextensions/types.go#L177-L222
+    - name: v1alpha1 # v1alpha1 version is the only version defined for the new resource
+      served: true
+      storage: true
+      schema: # https://github.com/kubernetes/apiextensions-apiserver/blob/03da840c7678e81d06a5c0285ec0fa56456a6546/pkg/apis/apiextensions/types.go#L402-L406
+        openAPIV3Schema:
+          type: object # Defines the new resource schema as an object, with no field
+          properties:
+            spec:
+              type: object
+              properties:
+                image:
+                  type: string
