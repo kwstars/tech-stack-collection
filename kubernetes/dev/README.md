@@ -34,15 +34,43 @@
 
 在 `client-go` 库中，`Clientset`、`DiscoveryClient` 和 `RESTClient` 都是用于与 Kubernetes API 交互的客户端，但它们的用途和功能有所不同：
 
-1. `Clientset`：这是最常用的客户端，适用于大多数常规的 Kubernetes API 操作。例如，你可以使用 Clientset 来创建、获取、更新和删除 Kubernetes 集群中的资源，如 Pods、Services、Deployments 等。如果你的应用程序需要与 Kubernetes API 进行频繁的交互，那么 Clientset 是最好的选择。
+1. `Clientset`：这是最常用的客户端，适用于大多数常规的 Kubernetes API 操作。例如，可以使用 Clientset 来创建、获取、更新和删除 Kubernetes 集群中的资源，如 Pods、Services、Deployments 等。如果应用程序需要与 Kubernetes API 进行频繁的交互，那么 Clientset 是最好的选择。
 
-2. `DiscoveryClient`：这个客户端用于发现和理解 Kubernetes API 服务器提供的 API 资源。它的主要使用场景是动态处理 Kubernetes 资源。例如，当你的程序需要处理用户定义的 Custom Resource Definitions (CRDs) 或者需要根据 API 服务器支持的 API 版本来动态调整行为时，你可以使用 DiscoveryClient。
+2. `DiscoveryClient`：这个客户端用于发现和理解 Kubernetes API 服务器提供的 API 资源。它的主要使用场景是动态处理 Kubernetes 资源。例如，当程序需要处理用户定义的 Custom Resource Definitions (CRDs) 或者需要根据 API 服务器支持的 API 版本来动态调整行为时，可以使用 DiscoveryClient。
 
-3. `RESTClient`：这是一个更低级别的客户端，它直接发送 HTTP 请求到 Kubernetes API 服务器。RESTClient 的主要使用场景是处理 Clientset 不支持的操作或者处理特定的 API 版本或资源类型。例如，如果你需要使用一些特殊的 HTTP 方法（如 PATCH）或者需要处理一些非标准的 API 资源，你可以使用 RESTClient。然而，使用 RESTClient 需要更多的知识和理解，因为你需要手动构造请求和处理响应。
+3. `RESTClient`：这是一个更低级别的客户端，它直接发送 HTTP 请求到 Kubernetes API 服务器。RESTClient 的主要使用场景是处理 Clientset 不支持的操作或者处理特定的 API 版本或资源类型。例如，如果需要使用一些特殊的 HTTP 方法（如 PATCH）或者需要处理一些非标准的 API 资源，可以使用 RESTClient。然而，使用 RESTClient 需要更多的知识和理解，因为需要手动构造请求和处理响应。
 
 ## [Custom Resource Definitions(CRDs)](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/)
 
+CRDs 是 Kubernetes 提供的一种机制，允许在 Kubernetes API 中定义新的资源类型。这些新的资源类型被称为 Custom Resources。一旦定义了 CRD，就可以像操作内置的资源类型（如 Pod、Service 等）一样，通过 Kubernetes API 操作这些自定义资源。
+
+可以使用 `client-go` 库中的动态客户端和 `Unstructured` 类型来操作自定义资源。`Unstructured` 类型可以表示任何没有预先定义结构的 Kubernetes 资源，包括自定义资源。动态客户端可以在运行时处理任何类型的 Kubernetes 资源，包括自定义资源。这种方式的优点是灵活，不需要预先知道资源的结构，也不需要每次资源的定义改变时重新生成代码。但是，这种方式不是类型安全的，可能会在运行时遇到错误。
+
+在代码片段中，正在使用 `unstructured.NestedString` 函数从 `Unstructured` 对象中获取字段，然后使用动态客户端删除一个资源。这是一个使用动态客户端和 `Unstructured` 类型操作自定义资源的例子。
+
 https://github.com/kubernetes/apiextensions-apiserver/blob/03da840c7678e81d06a5c0285ec0fa56456a6546/pkg/apis/apiextensions/types.go#L33-L88
+
+## [Controllers](https://kubernetes.io/docs/concepts/architecture/controller/)
+
+Controllers 是 Kubernetes 中的一种设计模式，它们是一种运行在 Kubernetes 集群中的、用于观察和管理 Kubernetes 资源的软件组件。Controllers 通过监听资源的状态变化，并根据当前状态和期望状态之间的差异来执行相应的操作，以达到将资源的当前状态调整为期望状态的目标。Controllers 可以用来管理内置的资源类型，也可以用来管理通过 CRDs 定义的自定义资源。
+
+- [Writing Controllers](https://github.com/kubernetes/community/blob/master/contributors/devel/sig-api-machinery/controllers.md)
+- [Kubernetes Sample Controller](https://github.com/kubernetes/sample-controller)
+- [Kubernetes Deployment Controller](https://github.com/kubernetes/kubernetes/tree/master/pkg/controller/deployment)
+- [Kubernetes ReplicaSet Controller](https://github.com/kubernetes/kubernetes/tree/master/pkg/controller/replicaset)
+- [Kubernetes StatefulSet Controller](https://github.com/kubernetes/kubernetes/tree/master/pkg/controller/statefulset)
+
+## [Operator](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/)
+
+Operators 是一种特殊的 Controller，它们用于管理特定应用或服务的生命周期。Operators 通常会使用 CRDs 来定义它们管理的资源类型，然后在 Controller 的逻辑中实现这些资源的管理策略。例如，一个数据库 Operator 可能会定义一个表示数据库实例的 CRD，然后在 Controller 中实现创建、更新、备份、恢复等数据库操作。
+
+[创建 Kubernetes Operator](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/#writing-operator) 最常用的 Kubernetes Operator 创建工具通常包括：
+
+1. **[kubebuilder](https://github.com/kubernetes-sigs/kubebuilder)**：这是一个由 Kubernetes 社区维护的开源项目，它提供了一套工具来帮助开发者创建、构建和部署 CRDs 和 Controllers。kubebuilder 提供了丰富的特性和良好的文档，是创建 Kubernetes Operator 的主流工具。如 [cert-manager](https://github.com/jetstack/cert-manager)，[KubeVirt](https://github.com/kubevirt/kubevirt)，[Gatekeeper](https://github.com/open-policy-agent/gatekeeper)，[Knative Serving](https://github.com/knative/serving) 等。
+
+2. **Operator Framework**：这是一个由 Red Hat 维护的开源项目，它提供了一套工具来帮助开发者快速创建、构建和部署 Operators。Operator Framework 包括 Operator SDK、Operator Lifecycle Manager 和 OperatorHub.io 等组件，提供了一整套的 Operator 开发和管理解决方案。如 [Prometheus Operator](https://github.com/prometheus-operator/prometheus-operator), [Jaeger Operator](https://github.com/jaegertracing/jaeger-operator), [Strimzi](https://github.com/strimzi/strimzi-kafka-operator) 等。
+
+3. **KUDO (Kubernetes Universal Declarative Operator)**：这是一个用于创建和管理 Kubernetes Operator 的框架，它使用 Go 语言。KUDO 允许使用声明式的方式来定义 Operator 的行为，无需编写大量的代码。[使用 KUDO 构建的 Kubernetes Operator 集合](https://github.com/kudobuilder/operators)。
 
 ## 参考和引用
 

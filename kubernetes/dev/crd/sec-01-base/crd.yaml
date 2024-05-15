@@ -21,10 +21,12 @@ spec: # https://github.com/kubernetes/apiextensions-apiserver/blob/03da840c7678e
       storage: true
       schema: # https://github.com/kubernetes/apiextensions-apiserver/blob/03da840c7678e81d06a5c0285ec0fa56456a6546/pkg/apis/apiextensions/types.go#L402-L406
         openAPIV3Schema:
-          type: object # Defines the new resource schema as an object, with no field
+          type: object # Defines the new resource schema as an object
           properties:
             spec:
               type: object
               properties:
                 image:
                   type: string
+                replicas:
+                  type: integer
