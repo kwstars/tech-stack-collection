@@ -8,13 +8,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func CreatePod(
-	ctx context.Context,
-	clientset kubernetes.Interface,
-	name string,
-	namespace string,
-	image string,
-) (pod *corev1.Pod, err error) {
+func CreatePod(ctx context.Context, clientset kubernetes.Interface, name string, namespace string, image string) (pod *corev1.Pod, err error) {
 	podToCreate := corev1.Pod{
 		Spec: corev1.PodSpec{
 			Containers: []corev1.Container{
@@ -29,9 +23,5 @@ func CreatePod(
 
 	return clientset.CoreV1().
 		Pods(namespace).
-		Create(
-			ctx,
-			&podToCreate,
-			metav1.CreateOptions{},
-		)
+		Create(ctx, &podToCreate, metav1.CreateOptions{})
 }

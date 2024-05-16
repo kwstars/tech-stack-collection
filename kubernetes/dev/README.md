@@ -30,15 +30,7 @@
 
 在这里，`<group>` 是 API 组，`<version>` 是 API 版本，`<plural_name>` 是资源类型的复数形式，`<ns>` 是命名空间。
 
-## The Client-go Library
-
-在 `client-go` 库中，`Clientset`、`DiscoveryClient` 和 `RESTClient` 都是用于与 Kubernetes API 交互的客户端，但它们的用途和功能有所不同：
-
-1. `Clientset`：这是最常用的客户端，适用于大多数常规的 Kubernetes API 操作。例如，可以使用 Clientset 来创建、获取、更新和删除 Kubernetes 集群中的资源，如 Pods、Services、Deployments 等。如果应用程序需要与 Kubernetes API 进行频繁的交互，那么 Clientset 是最好的选择。
-
-2. `DiscoveryClient`：这个客户端用于发现和理解 Kubernetes API 服务器提供的 API 资源。它的主要使用场景是动态处理 Kubernetes 资源。例如，当程序需要处理用户定义的 Custom Resource Definitions (CRDs) 或者需要根据 API 服务器支持的 API 版本来动态调整行为时，可以使用 DiscoveryClient。
-
-3. `RESTClient`：这是一个更低级别的客户端，它直接发送 HTTP 请求到 Kubernetes API 服务器。RESTClient 的主要使用场景是处理 Clientset 不支持的操作或者处理特定的 API 版本或资源类型。例如，如果需要使用一些特殊的 HTTP 方法（如 PATCH）或者需要处理一些非标准的 API 资源，可以使用 RESTClient。然而，使用 RESTClient 需要更多的知识和理解，因为需要手动构造请求和处理响应。
+## [The Client-go Library](https://github.com/kubernetes/client-go)
 
 ## [Custom Resource Definitions(CRDs)](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/)
 
@@ -46,17 +38,12 @@ CRDs 是 Kubernetes 提供的一种机制，允许在 Kubernetes API 中定义�
 
 可以使用 `client-go` 库中的动态客户端和 `Unstructured` 类型来操作自定义资源。`Unstructured` 类型可以表示任何没有预先定义结构的 Kubernetes 资源，包括自定义资源。动态客户端可以在运行时处理任何类型的 Kubernetes 资源，包括自定义资源。这种方式的优点是灵活，不需要预先知道资源的结构，也不需要每次资源的定义改变时重新生成代码。但是，这种方式不是类型安全的，可能会在运行时遇到错误。
 
-https://github.com/kubernetes/apiextensions-apiserver/blob/03da840c7678e81d06a5c0285ec0fa56456a6546/pkg/apis/apiextensions/types.go#L33-L88
-
 ## [Controllers](https://kubernetes.io/docs/concepts/architecture/controller/)
 
 Controllers 是 Kubernetes 中的一种设计模式，它们是一种运行在 Kubernetes 集群中的、用于观察和管理 Kubernetes 资源的软件组件。Controllers 通过监听资源的状态变化，并根据当前状态和期望状态之间的差异来执行相应的操作，以达到将资源的当前状态调整为期望状态的目标。Controllers 可以用来管理内置的资源类型，也可以用来管理通过 CRDs 定义的自定义资源。
 
 - [Writing Controllers](https://github.com/kubernetes/community/blob/master/contributors/devel/sig-api-machinery/controllers.md)
 - [Kubernetes Sample Controller](https://github.com/kubernetes/sample-controller)
-- [Kubernetes Deployment Controller](https://github.com/kubernetes/kubernetes/tree/master/pkg/controller/deployment)
-- [Kubernetes ReplicaSet Controller](https://github.com/kubernetes/kubernetes/tree/master/pkg/controller/replicaset)
-- [Kubernetes StatefulSet Controller](https://github.com/kubernetes/kubernetes/tree/master/pkg/controller/statefulset)
 
 ### controller-runtime
 
@@ -65,18 +52,6 @@ Controllers 是 Kubernetes 中的一种设计模式，它们是一种运行在 K
 `controller-runtime` 提供了一些更高级的抽象和便利的工具，使得开发者可以更容易地创建和管理 Kubernetes 控制器。例如，`controller-runtime` 提供了一个通用的控制器接口，开发者只需要实现这个接口，就可以创建一个新的控制器。
 
 `controller-runtime` 在底层使用了 `k8s.io/client-go` 库来与 Kubernetes API 服务器进行通信。所有的 API 操作，如获取、创建、更新和删除资源，都是通过 `client-go` 完成的。`controller-runtime` 的 `Client` 接口实际上是对 `client-go` 的 `Interface` 接口的一个封装，它提供了一些额外的功能，如缓存和最终一致性。
-
-这是一些有关 `controller-runtime` 的参考资料：
-
-- [controller-runtime GitHub](https://github.com/kubernetes-sigs/controller-runtime)
-- [controller-runtime GoDoc](https://pkg.go.dev/sigs.k8s.io/controller-runtime)
-- [Writing Controllers guide](https://github.com/kubernetes/community/blob/master/contributors/devel/sig-api-machinery/controllers.md)
-
-这是一些有关 `client-go` 的参考资料：
-
-- [client-go GitHub](https://github.com/kubernetes/client-go)
-- [client-go GoDoc](https://pkg.go.dev/k8s.io/client-go)
-- [Using a Go client to read and write Kubernetes objects](https://kubernetes.io/docs/concepts/overview/working-with-objects/kubernetes-objects/#object-management-using-client-libraries)
 
 ## [Operator](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/)
 

@@ -7,11 +7,7 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-func getPods(
-	ctx context.Context,
-	restClient rest.Interface,
-	ns string,
-) ([]corev1.Pod, error) {
+func getPods(ctx context.Context, restClient rest.Interface, ns string) ([]corev1.Pod, error) {
 	result := corev1.PodList{}
 	err := restClient.Get().
 		Namespace(ns).

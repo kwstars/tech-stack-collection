@@ -6,10 +6,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func checkMinimalServerVersion(
-	clientset kubernetes.Interface,
-	minMinor int,
-) (bool, error) {
+func checkMinimalServerVersion(clientset kubernetes.Interface, minMinor int) (bool, error) {
 	discoveryClient := clientset.Discovery()
 	info, err := discoveryClient.ServerVersion()
 	if err != nil {
