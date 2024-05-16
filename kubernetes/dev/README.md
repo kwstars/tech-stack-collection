@@ -46,8 +46,6 @@ CRDs 是 Kubernetes 提供的一种机制，允许在 Kubernetes API 中定义�
 
 可以使用 `client-go` 库中的动态客户端和 `Unstructured` 类型来操作自定义资源。`Unstructured` 类型可以表示任何没有预先定义结构的 Kubernetes 资源，包括自定义资源。动态客户端可以在运行时处理任何类型的 Kubernetes 资源，包括自定义资源。这种方式的优点是灵活，不需要预先知道资源的结构，也不需要每次资源的定义改变时重新生成代码。但是，这种方式不是类型安全的，可能会在运行时遇到错误。
 
-在代码片段中，正在使用 `unstructured.NestedString` 函数从 `Unstructured` 对象中获取字段，然后使用动态客户端删除一个资源。这是一个使用动态客户端和 `Unstructured` 类型操作自定义资源的例子。
-
 https://github.com/kubernetes/apiextensions-apiserver/blob/03da840c7678e81d06a5c0285ec0fa56456a6546/pkg/apis/apiextensions/types.go#L33-L88
 
 ## [Controllers](https://kubernetes.io/docs/concepts/architecture/controller/)
@@ -60,6 +58,26 @@ Controllers 是 Kubernetes 中的一种设计模式，它们是一种运行在 K
 - [Kubernetes ReplicaSet Controller](https://github.com/kubernetes/kubernetes/tree/master/pkg/controller/replicaset)
 - [Kubernetes StatefulSet Controller](https://github.com/kubernetes/kubernetes/tree/master/pkg/controller/statefulset)
 
+### controller-runtime
+
+`controller-runtime` 是一个由 Kubernetes SIGs 提供的库，它为构建 Kubernetes 控制器提供了工具和库。控制器是 Kubernetes 的核心组件，它们负责管理资源的生命周期，确保资源的状态与用户的期望一致。
+
+`controller-runtime` 提供了一些更高级的抽象和便利的工具，使得开发者可以更容易地创建和管理 Kubernetes 控制器。例如，`controller-runtime` 提供了一个通用的控制器接口，开发者只需要实现这个接口，就可以创建一个新的控制器。
+
+`controller-runtime` 在底层使用了 `k8s.io/client-go` 库来与 Kubernetes API 服务器进行通信。所有的 API 操作，如获取、创建、更新和删除资源，都是通过 `client-go` 完成的。`controller-runtime` 的 `Client` 接口实际上是对 `client-go` 的 `Interface` 接口的一个封装，它提供了一些额外的功能，如缓存和最终一致性。
+
+这是一些有关 `controller-runtime` 的参考资料：
+
+- [controller-runtime GitHub](https://github.com/kubernetes-sigs/controller-runtime)
+- [controller-runtime GoDoc](https://pkg.go.dev/sigs.k8s.io/controller-runtime)
+- [Writing Controllers guide](https://github.com/kubernetes/community/blob/master/contributors/devel/sig-api-machinery/controllers.md)
+
+这是一些有关 `client-go` 的参考资料：
+
+- [client-go GitHub](https://github.com/kubernetes/client-go)
+- [client-go GoDoc](https://pkg.go.dev/k8s.io/client-go)
+- [Using a Go client to read and write Kubernetes objects](https://kubernetes.io/docs/concepts/overview/working-with-objects/kubernetes-objects/#object-management-using-client-libraries)
+
 ## [Operator](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/)
 
 Operators 是一种特殊的 Controller，它们用于管理特定应用或服务的生命周期。Operators 通常会使用 CRDs 来定义它们管理的资源类型，然后在 Controller 的逻辑中实现这些资源的管理策略。例如，一个数据库 Operator 可能会定义一个表示数据库实例的 CRD，然后在 Controller 中实现创建、更新、备份、恢复等数据库操作。
@@ -71,6 +89,32 @@ Operators 是一种特殊的 Controller，它们用于管理特定应用或服�
 2. **Operator Framework**：这是一个由 Red Hat 维护的开源项目，它提供了一套工具来帮助开发者快速创建、构建和部署 Operators。Operator Framework 包括 Operator SDK、Operator Lifecycle Manager 和 OperatorHub.io 等组件，提供了一整套的 Operator 开发和管理解决方案。如 [Prometheus Operator](https://github.com/prometheus-operator/prometheus-operator), [Jaeger Operator](https://github.com/jaegertracing/jaeger-operator), [Strimzi](https://github.com/strimzi/strimzi-kafka-operator) 等。
 
 3. **KUDO (Kubernetes Universal Declarative Operator)**：这是一个用于创建和管理 Kubernetes Operator 的框架，它使用 Go 语言。KUDO 允许使用声明式的方式来定义 Operator 的行为，无需编写大量的代码。[使用 KUDO 构建的 Kubernetes Operator 集合](https://github.com/kudobuilder/operators)。
+
+## Admission Controllers
+
+在 Kubernetes 中，Admission 控制器是 API server 的一部分，它们在持久化对象之前拦截请求，可以对请求进行修改或拒绝。Admission 控制器分为两种类型：Mutating Admission 和 Validating Admission。
+
+**Mutating Admission**：在对象被持久化之前，但在验证之后运行。它们可以修改对象，例如添加、修改或删除对象的字段。这使得它们可以实现默认值、设置字段的值等功能。例如，Pod 的默认资源限制就是通过 Mutating Admission 控制器实现的。
+
+**Validating Admission**：在对象被持久化之前，但在 Mutating Admission 控制器之后运行。它们可以拒绝无效或不符合策略的请求。这使得它们可以实现策略检查、验证字段的值等功能。例如，PodSecurityPolicy 就是通过 Validating Admission 控制器实现的。
+
+在 Kubernetes 中，Admission 控制器的执行顺序是：首先执行所有的 Mutating Admission 控制器，然后更新对象的状态，然后执行所有的 Validating Admission 控制器。如果任何一个 Admission 控制器拒绝了请求，那么整个请求就会被拒绝，对象不会被持久化。
+
+![Admission Controllers](https://kubernetes.io/images/blog/2019-03-21-a-guide-to-kubernetes-admission-controllers/admission-controller-phases.png)
+
+### Webhook
+
+Admission Controllers 可以分为官方的和自定义的。
+
+**[官方的 Admission Controllers](https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/#what-does-each-admission-controller-do)**：Kubernetes 提供了一些内置的 Admission Controllers，例如 NamespaceLifecycle、LimitRanger、ServiceAccount、DefaultStorageClass 等。这些 Admission Controllers 已经被 Kubernetes 集成在内，可以直接在 API server 启动时通过 `--enable-admission-plugins` 参数启用。
+
+**[Dynamic Admission Control](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/)**：除了内置的 Admission Controllers，Kubernetes 还允许用户自定义 Admission Controllers。自定义的 Admission Controllers 可以是 MutatingAdmissionWebhook 或 ValidatingAdmissionWebhook，它们可以调用外部的 HTTP(S) 服务来修改或验证对象。这使得用户可以根据自己的需求来实现各种策略和功能。
+
+自定义的 Admission Controllers 需要编写代码并部署为一个独立的服务，然后在 API server 中配置 Webhook 来调用这个服务。这比较复杂，但提供了很大的灵活性。
+
+Istio 使用 mutating webhooks 来自动将 Envoy sidecar 容器注入到 Pod 中。当你为 Kubernetes namespace 打上特定的标签后，Istio 的 mutating webhook 就会监听这个 namespace 下的 Pod 创建事件，然后自动修改 Pod 的定义，将 Envoy sidecar 容器添加到 Pod 中。这种[Automatically injecting Envoy sidecar](https://istio.io/latest/docs/setup/additional-setup/sidecar-injection/#automatic-sidecar-injection)的方式大大简化了 Envoy sidecar 的部署，使得用户可以更容易地使用 Istio 的服务网格功能。
+
+[A Simple Kubernetes Admission Webhook](https://slack.engineering/simple-kubernetes-webhook/)
 
 ## 参考和引用
 

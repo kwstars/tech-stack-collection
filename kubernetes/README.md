@@ -38,3 +38,7 @@
   1. **网络配置管理**：Kube-proxy 负责管理其所在节点的网络配置。它会监听 Kubernetes API Server 上的 Service 和 Endpoint 对象的变化，然后根据这些变化来更新节点上的网络规则。
   2. **服务发现和负载均衡**：Kube-proxy 通过配置 iptables 规则或 IPVS 来实现服务发现和负载均衡。当一个 Pod 尝试访问一个 Service 时，Kube-proxy 会将请求重定向到正确的后端 Pod。
   3. **与 API Server 交互**：Kube-proxy 会与 API Server 进行交互，获取 Service 和 Endpoint 的信息。
+
+## [Ingress Controllers](https://kubernetes.io/docs/concepts/services-networking/ingress-controllers/)
+
+## [Gateway API](https://kubernetes.io/docs/concepts/services-networking/gateway/)

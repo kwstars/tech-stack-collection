@@ -1,0 +1,59 @@
+x-variables:
+  flag_initial_cluster_token: &flag_initial_cluster_token "--initial-cluster-token=mys3cr3ttok3n"
+
+services:
+  etcd-1:
+    image: quay.io/coreos/etcd:v3.5.13
+    entrypoint: /usr/local/bin/etcd
+    ports:
+      - 2379
+    command:
+      - "--name=etcd-1" # 设置 etcd 实例的名称为 "etcd-1"
+      - "--initial-advertise-peer-urls=http://etcd-1:2380" # 设置初始广播给集群中其他成员的 URL
+      - "--listen-peer-urls=http://0.0.0.0:2380" # 设置监听来自其他 etcd 实例的请求的 URL
+      - "--listen-client-urls=http://0.0.0.0:2379" # 设置监听来自客户端的请求的 URL
+      - "--advertise-client-urls=http://etcd-1:2379" # 设置广播给集群中其他成员的客户端 URL
+      - "--heartbeat-interval=100" # 设置心跳间隔为 100 毫秒
+      - "--election-timeout=1000" # 设置选举超时为 1000 毫秒
+      - "--discovery https://discovery.etcd.io/3d5f09f550d8c983af8cafed49bec726"
+    volumes:
+      - etcd1:/etcd_data
+
+  etcd-2:
+    image: quay.io/coreos/etcd:v3.5.13
+    entrypoint: /usr/local/bin/etcd
+    ports:
+      - 2379
+    command:
+      - "--name=etcd-2"
+      - "--initial-advertise-peer-urls=http://etcd-1:2380"
+      - "--listen-peer-urls=http://0.0.0.0:2380"
+      - "--listen-client-urls=http://0.0.0.0:2379"
+      - "--advertise-client-urls=http://etcd-1:2379"
+      - "--heartbeat-interval=100"
+      - "--election-timeout=1000"
+      - "--discovery https://discovery.etcd.io/3d5f09f550d8c983af8cafed49bec726"
+    volumes:
+      - etcd2:/etcd_data
+
+  etcd-3:
+    image: quay.io/coreos/etcd:v3.5.13
+    entrypoint: /usr/local/bin/etcd
+    ports:
+      - 2379
+    command:
+      - "--name=etcd-3"
+      - "--initial-advertise-peer-urls=http://etcd-1:2380"
+      - "--listen-peer-urls=http://0.0.0.0:2380"
+      - "--listen-client-urls=http://0.0.0.0:2379"
+      - "--advertise-client-urls=http://etcd-1:2379"
+      - "--heartbeat-interval=100"
+      - "--election-timeout=1000"
+      - "--discovery https://discovery.etcd.io/3d5f09f550d8c983af8cafed49bec726"
+    volumes:
+      - etcd3:/etcd_data
+
+volumes:
+  etcd1:
+  etcd2:
+  etcd3:

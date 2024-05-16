@@ -1,3 +1,5 @@
+# https://go.dev/doc/install
+
 GO_VESION=1.21.10
 
 install:
