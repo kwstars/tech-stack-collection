@@ -8,13 +8,19 @@
 - `k8s.io/client-go`: 用于与 Kubernetes 集群进行交互，包括访问 Kubernetes API、发现 API 服务器支持的 API、执行任意 Kubernetes API 对象的通用操作等。
 - `k8s.io/code-generator`: 用于生成 Go 语言代码的工具，它可以在自定义资源定义（CustomResourceDefinition）的上下文中用于构建本地的、版本化的客户端、通知器（informers）和其他帮助函数，或者在用户提供的 API 服务器的上下文中用于构建内部和版本化类型之间的转换、默认值设定项、protobuf 编解码器、内部和版本化的客户端和通知器。
 
-## Group-Version-Resource
+## GVR and GVK
 
-在 Kubernetes 中，Group-Version-Resource（GVR）是用来唯一标识 API 资源的一种方式。
+在 Kubernetes 中，资源类型可以通过两种方式来标识：GroupVersionKind（GVK）和 GroupVersionResource（GVR）。
 
-- **Group**：表示 API 组，它是一组相关的 API 资源的集合。例如，所有的 Pod、Service、Deployment 等核心资源都属于 "" 组（核心组），而所有的 Deployment、StatefulSet、DaemonSet 等资源都属于 "apps" 组。
-- **Version**：表示 API 的版本。Kubernetes 支持 API 版本控制，以便在不破坏现有用户的情况下引入新的 API 变更。例如，v1、v1beta1 等。
-- **Resource**：表示 API 资源类型。在 Kubernetes 中，资源是可以通过 API 操作的实体，如 Pod、Node、Service 等。
+1. **GroupVersionKind（GVK）**：GVK 是 Kubernetes API 中对象的三元组标识符，用于确定一个特定的 API 对象类型。其中，“Group” 是 API 组（例如，'apps'），“Version” 是 API 版本（例如，'v1'），“Kind” 是 API 对象类型（例如，'Deployment'）。
+
+2. **GroupVersionResource（GVR）**：GVR 也是 Kubernetes API 中对象的三元组标识符，但是它用于确定 API 资源的类型。其中，“Group” 和 “Version” 与 GVK 中的相同，而 “Resource” 是 API 资源类型（例如，'deployments'）。
+
+GVK 和 GVR 之间的主要区别在于，GVK 用于在客户端（例如，client-go）中表示对象，而 GVR 用于在 HTTP RESTful API 请求中表示资源。在大多数情况下，资源名称是对象种类名称的小写和复数形式，但这并不总是如此，因此不能直接将 GVK 和 GVR 互换。
+
+例如，对于 Deployment 对象，其 GVK 是 `apps/v1, Kind=Deployment`，而其 GVR 是 `apps/v1, Resource=deployments`。
+
+### GVR
 
 [Kubernetes API](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.30/#api-overview) 主要分为两类：核心（Core）API 和扩展（Extensions）API。
 
@@ -32,11 +38,13 @@
 
 ## [The Client-go Library](https://github.com/kubernetes/client-go)
 
+[client-go](https://github.com/kubernetes/client-go) 是 Kubernetes 的官方 Go 语言客户端库，它提供了与 Kubernetes API 服务器进行交互的接口。这个库包含了各种用于操作 Kubernetes 资源的 API，包括创建、更新、删除和获取资源等操作。
+
+client-go 提供了对 Kubernetes 内置资源类型（如 Pod、Service、Deployment 等）的支持，同时也支持通过 Custom Resource Definitions (CRDs) 定义的自定义资源类型。
+
 ## [Custom Resource Definitions(CRDs)](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/)
 
 CRDs 是 Kubernetes 提供的一种机制，允许在 Kubernetes API 中定义新的资源类型。这些新的资源类型被称为 Custom Resources。一旦定义了 CRD，就可以像操作内置的资源类型（如 Pod、Service 等）一样，通过 Kubernetes API 操作这些自定义资源。
-
-可以使用 `client-go` 库中的动态客户端和 `Unstructured` 类型来操作自定义资源。`Unstructured` 类型可以表示任何没有预先定义结构的 Kubernetes 资源，包括自定义资源。动态客户端可以在运行时处理任何类型的 Kubernetes 资源，包括自定义资源。这种方式的优点是灵活，不需要预先知道资源的结构，也不需要每次资源的定义改变时重新生成代码。但是，这种方式不是类型安全的，可能会在运行时遇到错误。
 
 ## [Controllers](https://kubernetes.io/docs/concepts/architecture/controller/)
 
