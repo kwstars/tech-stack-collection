@@ -1,5 +1,5 @@
 create:
-	kind create cluster --image=mykindest/node:v1.28.7 --config=./kind.yaml
+	kind create cluster --image=kindest/node:v1.28.7 --config=./kind.yaml
 
 list:
 	@sudo kind get clusters

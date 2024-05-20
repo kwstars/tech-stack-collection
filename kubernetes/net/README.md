@@ -31,3 +31,6 @@ Kubernetes 的流量主要可以分为以下几类：
 - https://www.alibabacloud.com/blog/getting-started-with-kubernetes-%7C-kubernetes-cnis-and-cni-plug-ins_596330
 - https://gitee.com/rowan-wcni/projects
 - https://www.yuque.com/wei.luo/network
+- [Networking and Kubernetes](https://www.oreilly.com/library/view/networking-and-kubernetes/9781492081647/)
+- [The Almighty Pause Container](https://www.ianlewis.org/en/almighty-pause-container)
+- [KIND and Load Balancing with MetalLB on Mac](https://www.thehumblelab.com/kind-and-metallb-on-mac/)
