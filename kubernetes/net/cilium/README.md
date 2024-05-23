@@ -1,1 +1,0 @@
-- https://cilium.io/blog/2021/05/11/cni-benchmark/
