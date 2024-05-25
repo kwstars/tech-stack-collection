@@ -1,0 +1,50 @@
+# server1 (10.1.5.10/24) <--> (eth1:10.1.5.1/24) gw1 (eth2:172.12.1.10/24) <--> (eth2:172.12.1.11/24) gw2 (eth1:10.1.8.1/24) <--> server2 (10.1.8.10/24)
+name: ipip
+topology:
+  nodes:
+    gw1:
+      kind: linux
+      image: wbitt/network-multitool
+      exec:
+        - sysctl -w net.ipv4.ip_forward=1
+        - ip addr add 10.1.5.1/24 dev eth1
+        - ip addr add 172.12.1.10/24 dev eth2
+        - ip tunnel add tun0 mode ipip local 172.12.1.10 remote 172.12.1.11
+        - ip addr add 1.1.1.1/24 dev tun0
+        - ip link set tun0 up
+        - ip route add 10.1.8.0/24 via 1.1.1.2
+      binds:
+        - .:/data
+    gw2:
+      kind: linux
+      image: wbitt/network-multitool
+      exec:
+        - sysctl -w net.ipv4.ip_forward=1
+        - ip addr add 10.1.8.1/24 dev eth1
+        - ip addr add 172.12.1.11/24 dev eth2
+        - ip tunnel add tun0 mode ipip local 172.12.1.11 remote 172.12.1.10
+        - ip addr add 1.1.1.2/24 dev tun0
+        - ip link set tun0 up
+        - ip route add 10.1.5.0/24 via 1.1.1.1
+      binds:
+        - .:/data
+    server1:
+      kind: linux
+      image: wbitt/network-multitool
+      exec:
+        - ip addr add 10.1.5.10/24 dev net0
+        - ip route replace default via 10.1.5.1
+      binds:
+        - .:/data
+    server2:
+      kind: linux
+      image: wbitt/network-multitool
+      exec:
+        - ip addr add 10.1.8.10/24 dev net0
+        - ip route replace default via 10.1.8.1
+      binds:
+        - .:/data
+  links:
+    - endpoints: ["gw1:eth1", "server1:net0"]
+    - endpoints: ["gw2:eth1", "server2:net0"]
+    - endpoints: ["gw1:eth2", "gw2:eth2"]
