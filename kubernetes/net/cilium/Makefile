@@ -11,7 +11,7 @@ TARGETS = basics/vxlan-with-kubeproxy-default \
 .PHONY: $(TARGETS) mykindest clean
 
 $(TARGETS):
-	bash $@/run.sh
+	bash $@/run.sh $(subst /,-,$@)
 	if [ -f $@/validate.sh ]; then \
 		chmod +x $@/validate.sh && $@/validate.sh; \
 	else \
@@ -24,4 +24,4 @@ mykindest:
 
 clean:
 	find . -name "*.pcap" -type f -delete
-	$(foreach cluster,$(TARGETS),sudo kind delete cluster --name $(notdir $(cluster));)
+	$(foreach cluster,$(TARGETS),sudo kind delete cluster --name $(subst /,-,$(cluster));)
