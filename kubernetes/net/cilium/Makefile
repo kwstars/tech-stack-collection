@@ -6,7 +6,9 @@ TARGETS = basics/vxlan-with-kubeproxy-default \
 		basics/native-routing-ebpf-host-routing \
 		native-routing-ebpf-host-routing/socket-lb \
 		native-routing-ebpf-host-routing/dsr \
-		native-routing-ebpf-host-routing/ingress
+		native-routing-ebpf-host-routing/ingress/http \
+		native-routing-ebpf-host-routing/ingress/grpc \
+		native-routing-ebpf-host-routing/ingress/tls
 
 .PHONY: $(TARGETS) mykindest clean
 

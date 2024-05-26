@@ -18,10 +18,10 @@ operator:
 routingMode: "native"
 ipv4NativeRoutingCIDR: "10.244.0.0/16"
 autoDirectNodeRoutes: "true"
+installNoConntrackIptablesRules: true
 kubeProxyReplacement: "true"
 bpf:
   masquerade: "true"
-installNoConntrackIptablesRules: true
 ingressController:
   enabled: true
   default: false
