@@ -12,7 +12,11 @@ TARGETS = basics/vxlan-with-kubeproxy-default \
 
 $(TARGETS):
 	bash $@/run.sh
-	[ -f $@/validate.sh ] && chmod +x $@/validate.sh && $@/validate.sh || kubectl apply -f ./test-pod.yaml
+	if [ -f $@/validate.sh ]; then \
+		chmod +x $@/validate.sh && $@/validate.sh; \
+	else \
+		kubectl apply -f ./test-pod.yaml; \
+	fi
 	kubectl wait --timeout=100s --for=condition=Ready=true pods --all -A
 
 mykindest:

@@ -26,3 +26,6 @@ ingressController:
   enabled: true
   default: false
   loadbalancerMode: dedicated
+  # https://docs.cilium.io/en/v1.15/network/servicemesh/tls-default-certificate/
+  # defaultSecretNamespace:
+  # defaultSecretName:
