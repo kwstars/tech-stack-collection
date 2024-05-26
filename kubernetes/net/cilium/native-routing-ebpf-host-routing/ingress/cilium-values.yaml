@@ -1,0 +1,28 @@
+# https://docs.cilium.io/en/v1.15/network/concepts/routing/#native-routing
+debug:
+  enabled: true
+  verbose: datapath
+ipam:
+  mode: "cluster-pool"
+  operator:
+    clusterPoolIPv4PodCIDRList: ["172.16.0.0/16"]
+image:
+  useDigest: false
+  repository: "10.0.0.10:5000/cilium/cilium"
+  tag: "v1.15.5"
+operator:
+  image:
+    useDigest: false
+    repository: "10.0.0.10:5000/cilium/operator"
+    tag: "v1.15.5"
+routingMode: "native"
+ipv4NativeRoutingCIDR: "10.244.0.0/16"
+autoDirectNodeRoutes: "true"
+kubeProxyReplacement: "true"
+bpf:
+  masquerade: "true"
+installNoConntrackIptablesRules: true
+ingressController:
+  enabled: true
+  default: false
+  loadbalancerMode: dedicated

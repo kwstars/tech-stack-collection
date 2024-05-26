@@ -2,7 +2,7 @@
 
 set -e
 
-readonly KIND_NAME="vxlan-with-kubeproxy"
+readonly KIND_NAME="vxlan-with-kubeproxy-default"
 
 # Switch to the script's directory
 cd "$(dirname "$0")"
@@ -11,6 +11,7 @@ cd "$(dirname "$0")"
 kind create cluster --name=$KIND_NAME --image=mykindest/node:v1.28.7 --config=./kind.yaml
 
 # Remove taints
+# kubectl get nodes vxlan-with-kubeproxy-default-control-plane -o jsonpath='{.status.addresses[?(@.type=="InternalIP")].address}'
 controller_node=$(kubectl get nodes --no-headers -o custom-columns=NAME:.metadata.name | grep control-plane)
 kubectl taint nodes $controller_node node-role.kubernetes.io/control-plane:NoSchedule-
 
