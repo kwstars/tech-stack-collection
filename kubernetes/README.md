@@ -33,6 +33,8 @@
   2. **与 API Server 交互**：Kubelet 会定期向 API Server 报告节点的状态和 Pod 的状态，并从 API Server 获取分配给其节点的 Pod 的信息。
   3. **容器运行时接口**：Kubelet 使用容器运行时接口（CRI）与容器运行时进行交互，以管理容器的生命周期。这使得 Kubernetes 可以支持多种容器运行时，如 Docker、containerd、CRI-O 等。
 
+https://kubernetes.io/docs/reference/command-line-tools-reference/kubelet/
+
 - Kube-proxy 是 Kubernetes 集群中每个节点上运行的网络代理，它负责实现部分 Kubernetes Service 概念。是 Kubernetes 集群中的 "网络管理员"，它确保了 Service 的可访问性和网络的正确配置。
 
   1. **网络配置管理**：Kube-proxy 负责管理其所在节点的网络配置。它会监听 Kubernetes API Server 上的 Service 和 Endpoint 对象的变化，然后根据这些变化来更新节点上的网络规则。

@@ -1,6 +1,14 @@
 name: vxlan-direct-routing
 topology:
   nodes:
+    k01:
+      kind: k8s-kind
+      startup-config: kind.yaml
+      image: kindest/node:v1.28.7
+      extras:
+        k8s_kind:
+          deploy:
+            wait: 0s
     gw0:
       kind: linux
       image: wbitt/network-multitool
@@ -15,46 +23,81 @@ topology:
       kind: bridge
     br-pool1:
       kind: bridge
-    server1:
-      kind: linux
-      image: 10.0.0.10:5000/wbitt/network-multitool
-      network-mode: container:vxlan-direct-routing-control-plane
+    k01-control-plane:
+      kind: ext-container
       exec:
         - ip addr add 10.1.5.10/24 dev net0
         - ip route replace default via 10.1.5.1
       binds:
         - .:/data
-    server2:
-      kind: linux
-      image: 10.0.0.10:5000/wbitt/network-multitool
-      network-mode: container:vxlan-direct-routing-worker
+    k01-worker:
+      kind: ext-container
       exec:
         - ip addr add 10.1.5.11/24 dev net0
         - ip route replace default via 10.1.5.1
       binds:
         - .:/data
-    server3:
-      kind: linux
-      image: 10.0.0.10:5000/wbitt/network-multitool
-      network-mode: container:vxlan-direct-routing-worker2
+    k01-worker2:
+      kind: ext-container
       exec:
         - ip addr add 10.1.8.10/24 dev net0
         - ip route replace default via 10.1.8.1
       binds:
         - .:/data
-    server4:
-      kind: linux
-      image: 10.0.0.10:5000/wbitt/network-multitool
-      network-mode: container:vxlan-direct-routing-worker3
+    k01-worker3:
+      kind: ext-container
       exec:
         - ip addr add 10.1.8.11/24 dev net0
         - ip route replace default via 10.1.8.1
       binds:
         - .:/data
   links:
-    - endpoints: ["br-pool0:br-pool0-net0", "server1:net0"]
-    - endpoints: ["br-pool0:br-pool0-net1", "server2:net0"]
-    - endpoints: ["br-pool1:br-pool1-net0", "server3:net0"]
-    - endpoints: ["br-pool1:br-pool1-net1", "server4:net0"]
+    - endpoints: ["br-pool0:br-pool0-net0", "k01-control-plane:net0"]
+    - endpoints: ["br-pool0:br-pool0-net1", "k01-worker:net0"]
+    - endpoints: ["br-pool1:br-pool1-net0", "k01-worker2:net0"]
+    - endpoints: ["br-pool1:br-pool1-net1", "k01-worker3:net0"]
     - endpoints: ["gw0:eth1", "br-pool0:br-pool0-net2"]
     - endpoints: ["gw0:eth2", "br-pool1:br-pool1-net2"]
+  #   server1:
+  #     kind: linux
+  #     image: 10.0.0.10:5000/wbitt/network-multitool
+  #     network-mode: container:vxlan-direct-routing-control-plane
+  #     exec:
+  #       - ip addr add 10.1.5.10/24 dev net0
+  #       - ip route replace default via 10.1.5.1
+  #     binds:
+  #       - .:/data
+  #   server2:
+  #     kind: linux
+  #     image: 10.0.0.10:5000/wbitt/network-multitool
+  #     network-mode: container:vxlan-direct-routing-worker
+  #     exec:
+  #       - ip addr add 10.1.5.11/24 dev net0
+  #       - ip route replace default via 10.1.5.1
+  #     binds:
+  #       - .:/data
+  #   server3:
+  #     kind: linux
+  #     image: 10.0.0.10:5000/wbitt/network-multitool
+  #     network-mode: container:vxlan-direct-routing-worker2
+  #     exec:
+  #       - ip addr add 10.1.8.10/24 dev net0
+  #       - ip route replace default via 10.1.8.1
+  #     binds:
+  #       - .:/data
+  #   server4:
+  #     kind: linux
+  #     image: 10.0.0.10:5000/wbitt/network-multitool
+  #     network-mode: container:vxlan-direct-routing-worker3
+  #     exec:
+  #       - ip addr add 10.1.8.11/24 dev net0
+  #       - ip route replace default via 10.1.8.1
+  #     binds:
+  #       - .:/data
+  # links:
+  #   - endpoints: ["br-pool0:br-pool0-net0", "server1:net0"]
+  #   - endpoints: ["br-pool0:br-pool0-net1", "server2:net0"]
+  #   - endpoints: ["br-pool1:br-pool1-net0", "server3:net0"]
+  #   - endpoints: ["br-pool1:br-pool1-net1", "server4:net0"]
+  #   - endpoints: ["gw0:eth1", "br-pool0:br-pool0-net2"]
+  #   - endpoints: ["gw0:eth2", "br-pool1:br-pool1-net2"]
