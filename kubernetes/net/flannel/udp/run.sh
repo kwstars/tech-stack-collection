@@ -1,26 +1,30 @@
 #!/bin/bash
-set -o errexit
-set -o verbose
-set -o nounset
+set -e
+set -v
+set -u
+
+readonly KIND_NAME="$1"
 
 # Switch to the script's directory
 cd "$(dirname "$0")"
 
-# 1.prep noCNI env
-kind create cluster --name=flannel-udp --image=mykindest/node:v1.28.7 --config=./kind.yaml
+# Create network
+docker network rm kind || true
+docker network create --subnet=172.30.0.0/16 kind
 
-# 2.remove taints
-kubectl taint nodes $(kubectl get nodes --no-headers -o custom-columns=NAME:.metadata.name | grep control-plane) node-role.kubernetes.io/control-plane:NoSchedule-
-kubectl get nodes -o wide
+# Prepare noCNI env
+kind create cluster --name="$KIND_NAME" --image=mykindest/node:v1.28.7 --config=./kind.yaml
 
-# 3.install CNI
-# https://github.com/flannel-io/flannel/releases/download/v0.24.4/kube-flannel.yml
+# Remove taints
+controller_node=$(kubectl get nodes --no-headers -o custom-columns=NAME:.metadata.name | grep control-plane)
+# controller_node_ip=$(kubectl get node "$controller_node" -o jsonpath='{.status.addresses[?(@.type=="InternalIP")].address}')
+kubectl taint nodes "$controller_node" node-role.kubernetes.io/control-plane:NoSchedule-
+
+# Install CNI
+# https://github.com/flannel-io/flannel/releases/download/v0.25.1/kube-flannel.yml
 kubectl apply -f ./flannel.yaml
 
-# 4. Run a test pod
-kubectl apply -f ./test-pod.yaml
-
-kubectl wait --timeout=100s --for=condition=Ready=true pods --all -A
-
 # Captrue packet
-docker exec -d flannel-udp-control-plane bash -c "tcpdump -pen -i eth0 -w /data/control-eth0.pcap"
+docker exec -d "${KIND_NAME}"-control-plane bash -c 'tcpdump -pen -i eth0 -w /data/control-plane-eth0.pcap'
+docker exec -d "${KIND_NAME}"-worker bash -c 'tcpdump -pen -i eth0 -w /data/worker1-eth0.pcap'
+docker exec -d "${KIND_NAME}"-worker2 bash -c 'tcpdump -pen -i eth0 -w /data/worker2-eth0.pcap'

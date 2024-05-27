@@ -1,0 +1,8 @@
+flannel:
+  image:
+    repository: 10.0.0.10:5000/flannel/flannel
+    tag: v0.25.2
+  image_cni:
+    repository: 10.0.0.10:5000/flannel/flannel-cni-plugin
+    tag: v1.4.1-flannel1
+  backend: "vxlan"

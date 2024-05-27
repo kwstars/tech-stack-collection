@@ -2,7 +2,8 @@ kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 networking:
   disableDefaultCNI: true
-  podSubnet: "10.244.0.0/16"
+  podSubnet: "10.244.0.0/16" # kubectl cluster-info dump | grep -m 1 cluster-cidr
+  serviceSubnet: "10.96.0.0/16" # kubectl cluster-info dump | grep -m 1 service-cluster-ip-range
 nodes:
   - role: control-plane
     extraMounts:
