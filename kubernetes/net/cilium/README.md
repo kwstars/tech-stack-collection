@@ -33,3 +33,8 @@
 ## 参考和引用
 
 - https://cilium.io/blog/2021/05/11/cni-benchmark/
+- https://snowgo.top/2022/09/11/Linux%E5%86%85%E6%A0%B8%E7%BD%91%E7%BB%9C%E6%95%B0%E6%8D%AE%E5%8C%85%E6%94%B6%E5%8F%91%E6%B5%81%E7%A8%8B/
+- https://github.com/DavadDi/bpf_study/blob/master/how-to-make-linux-microservice-aware-with-cilium-ebpf/index.md
+- https://www.alibabacloud.com/blog/599446
+- https://www.tigera.io/learn/guides/ebpt/ebpf-xdp
+- https://alokprasad7.blogspot.com/2020/10/getting-started-with-xdp-linux-random.html

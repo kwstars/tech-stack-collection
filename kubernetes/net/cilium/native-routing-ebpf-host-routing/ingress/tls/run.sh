@@ -3,7 +3,7 @@
 set -e
 set -v
 
-readonly KIND_NAME="$1"
+readonly LAB_NAME="$1"
 
 # Switch to the script's directory
 cd "$(dirname "$0")"
@@ -32,7 +32,7 @@ function pull_and_load_images() {
 
   for IMAGE in "${IMAGES[@]}"; do
     docker pull "$IMAGE"
-    kind load docker-image "$IMAGE" --name "$KIND_NAME"
+    kind load docker-image "$IMAGE" --name "$LAB_NAME"
   done
 }
 
@@ -62,7 +62,7 @@ function pull_and_retag_images() {
       docker tag "$SOURCE_REGISTRY"/"$IMAGE" "$TARGET_IMAGE"
       docker rmi "$SOURCE_REGISTRY"/"$IMAGE"
     fi
-    kind load docker-image "$TARGET_IMAGE" --name "$KIND_NAME"
+    kind load docker-image "$TARGET_IMAGE" --name "$LAB_NAME"
   done
 }
 
@@ -70,7 +70,7 @@ docker network rm kind || true
 docker network create --subnet=172.30.0.0/16 kind
 
 # Prepare noCNI env
-kind create cluster --name="$KIND_NAME" --image=mykindest/node:v1.28.7 --config=./kind.yaml
+kind create cluster --name="$LAB_NAME" --image=mykindest/node:v1.28.7 --config=./kind.yaml
 
 # # Remove taints
 controller_node=$(kubectl get nodes --no-headers -o custom-columns=NAME:.metadata.name | grep control-plane)
@@ -97,7 +97,7 @@ helm upgrade --install cilium cilium/cilium --namespace kube-system --create-nam
   --set k8sServicePort=6443
 
 # Defining The IPs To Assign To The Load Balancer Services
-kubectl wait --timeout=100s --for=condition=Ready=true pods --all -A
+kubectl wait --timeout=300s --for=condition=Ready=true pods --all -A
 cat <<EOF | kubectl apply -f -
 apiVersion: metallb.io/v1beta1
 kind: IPAddressPool

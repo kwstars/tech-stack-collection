@@ -3,13 +3,13 @@ set -e
 set -v
 set -u
 
-readonly KIND_NAME="$1"
+readonly LAB_NAME="$1"
 
 # Switch to the script's directory
 cd "$(dirname "$0")"
 
 # Prepare noCNI env
-# kind create cluster --name="$KIND_NAME" --image=mykindest/node:v1.28.7 --config=./kind.yaml
+# kind create cluster --name="$LAB_NAME" --image=mykindest/node:v1.28.7 --config=./kind.yaml
 
 # Run clab
 sudo ip link add name br-pool0 type bridge

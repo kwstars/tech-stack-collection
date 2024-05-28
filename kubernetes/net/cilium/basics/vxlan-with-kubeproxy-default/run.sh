@@ -3,13 +3,13 @@
 set -e
 set -v
 
-readonly KIND_NAME="$1"
+readonly LAB_NAME="$1"
 
 # Switch to the script's directory
 cd "$(dirname "$0")"
 
 # Prepare noCNI env
-kind create cluster --name="$KIND_NAME" --image=mykindest/node:v1.28.7 --config=./kind.yaml
+kind create cluster --name="$LAB_NAME" --image=mykindest/node:v1.28.7 --config=./kind.yaml
 
 # Remove taints
 controller_node=$(kubectl get nodes --no-headers -o custom-columns=NAME:.metadata.name | grep control-plane)
@@ -20,7 +20,7 @@ kubectl taint nodes "$controller_node" node-role.kubernetes.io/control-plane:NoS
 sudo chown -R root:root /opt/cni/bin
 
 # Load images
-# kind load docker-image quay.io/cilium/operator-generic:v1.15.5 --name=$KIND_NAME
+# kind load docker-image quay.io/cilium/operator-generic:v1.15.5 --name=$LAB_NAME
 
 # Install CNI
 # helm search repo cilium/cilium --versions
@@ -43,6 +43,6 @@ helm upgrade --install cilium cilium/cilium --namespace kube-system --create-nam
 # kubectl wait --timeout=100s --for=condition=Ready=true pods --all -A
 
 # Capture packet
-docker exec -d "${KIND_NAME}"-control-plane bash -c 'tcpdump -pen -i eth0 -w /data/control-plane-eth0.pcap'
-docker exec -d "${KIND_NAME}"-worker bash -c 'tcpdump -pen -i eth0 -w /data/worker1-eth0.pcap'
-docker exec -d "${KIND_NAME}"-worker2 bash -c 'tcpdump -pen -i eth0 -w /data/worker2-eth0.pcap'
+docker exec -d "${LAB_NAME}"-control-plane bash -c 'tcpdump -pen -i eth0 -w /data/control-plane-eth0.pcap'
+docker exec -d "${LAB_NAME}"-worker bash -c 'tcpdump -pen -i eth0 -w /data/worker1-eth0.pcap'
+docker exec -d "${LAB_NAME}"-worker2 bash -c 'tcpdump -pen -i eth0 -w /data/worker2-eth0.pcap'

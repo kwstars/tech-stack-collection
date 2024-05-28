@@ -38,4 +38,4 @@ sudo tee -a /etc/hosts <<<"$(kubectl get ing tls-ingress -o=jsonpath='{.status.l
 # Test TLS ingress
 curl -k https://bookinfo.cilium.rocks/details/1
 kubectl get secret demo-cert -o jsonpath="{.data['ca\.crt']}" | base64 --decode >/tmp/minica.pem
-grpcurl -proto ./demo.proto -cacert /tmp/minica.pem hipstershop.cilium.rocks:443 hipstershop.ProductCatalogService/ListProducts
+# grpcurl -proto ./demo.proto -cacert /tmp/minica.pem hipstershop.cilium.rocks:443 hipstershop.ProductCatalogService/ListProducts

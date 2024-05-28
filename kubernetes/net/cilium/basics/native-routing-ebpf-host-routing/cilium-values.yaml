@@ -16,7 +16,7 @@ operator:
     repository: "10.0.0.10:5000/cilium/operator"
     tag: "v1.15.5"
 routingMode: "native"
-ipv4NativeRoutingCIDR: "10.244.0.0/16"
+ipv4NativeRoutingCIDR: "172.16.0.0/16"
 autoDirectNodeRoutes: "true"
 installNoConntrackIptablesRules: true
 kubeProxyReplacement: "true"

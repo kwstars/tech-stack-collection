@@ -1,3 +1,5 @@
+SHELL = /bin/bash
+
 TARGETS = basics/vxlan-with-kubeproxy-default \
 		basics/native-routing-with-kubeproxy \
 		basics/vxlan-without-kubeproxy \
@@ -18,12 +20,12 @@ $(TARGETS):
 		chmod +x $@/validate.sh && $@/validate.sh; \
 	else \
 		kubectl apply -f ./test-pod.yaml; \
+		kubectl wait --timeout=100s --for=condition=Ready=true pods --all -A; \
 	fi
-	kubectl wait --timeout=100s --for=condition=Ready=true pods --all -A
 
 mykindest:
 	docker build -t mykindest/node:v1.28.7 .
 
 clean:
 	find . -name "*.pcap" -type f -delete
-	$(foreach cluster,$(TARGETS),sudo kind delete cluster --name $(subst /,-,$(cluster));)
+	$(foreach cluster,$(TARGETS), bash $(cluster)/clean.sh $(subst /,-,$(cluster));)
