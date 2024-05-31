@@ -1,0 +1,24 @@
+# https://github.com/hashicorp/consul/blob/v1.18.2/Dockerfile
+# https://developer.hashicorp.com/consul/tutorials/archive/docker-container-agents
+services:
+  consul:
+    image: hashicorp/consul:1.18
+    container_name: consul
+    ports:
+      - "8500:8500"
+      - "8600:8600/udp"
+    command:
+      - "agent"
+      - "-server"
+      - "-bootstrap-expect=1"
+      - "-ui"
+      - "-node=consul-server"
+      - "-client=0.0.0.0"
+    volumes:
+      - "consul-data:/consul/data"
+    environment:
+      - CONSUL_BIND_INTERFACE=eth0
+      - 'CONSUL_LOCAL_CONFIG={"disable_update_check": true}'
+
+volumes:
+  consul-data:
