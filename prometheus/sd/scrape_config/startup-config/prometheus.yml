@@ -1,0 +1,12 @@
+# https://prometheus.io/docs/prometheus/latest/configuration/configuration/
+# https://github.com/prometheus/prometheus/blob/main/documentation/examples/prometheus.yml
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # 抓取 Prometheus 自身的数据
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]

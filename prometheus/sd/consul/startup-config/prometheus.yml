@@ -1,0 +1,52 @@
+# https://prometheus.io/docs/prometheus/latest/configuration/configuration/
+# https://github.com/prometheus/prometheus/blob/main/documentation/examples/prometheus.yml
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # https://prometheus.io/docs/prometheus/latest/configuration/configuration/#consul_sd_config
+  - job_name: consul_sd
+    consul_sd_configs:
+      - server: "consul:8500"
+        refresh_interval: 10s # default = 30s
+        datacenter: "dc1"
+    relabel_configs:
+      # 保留服务名为 consul_sd 且健康状态为 passing 的 Consul 服务目标
+      # - action: keep
+      #   source_labels: [__meta_consul_service, __meta_consul_health]
+      #   regex: prometheus;passing
+      # 保留环境为 production 的 Consul 服务目标
+      - action: keep
+        source_labels: [__meta_consul_service_metadata_env]
+        regex: production
+      # 将所有以 __meta_consul_service_metadata_ 开头的标签复制到以 consul_ 开头的新的标签，源标签的名称中 __meta_consul_service_metadata_ 后面的部分会被复制到新的标签的名称中。
+      - action: labelmap
+        regex: __meta_consul_service_metadata_(.*)
+        replacement: consul_$1
+# Before relabeling:
+# Scrape address_="prometheus:9090"
+# Duration Error
+# meta_consul_address="172.27.0.3"
+# meta_consul_dc="dc1"
+# meta_consul_health="passing"
+# meta_consul_metadata_consul_version="1.18.2"
+# meta_consul_node="consul-server"
+# meta_consul_service="prometheus"
+# meta_consul_service_address="prometheus"
+# meta_consul_service_id="prometheus"
+# meta_consul_service_metadata_env="production"
+# meta_consul_service_port="9090"
+# meta_consul_tagged_address_lan="172.27.0.3"
+# meta_consul_tagged_address_lan_ipv4="172.27.0.3"
+# meta_consul_tagged_address_wan="172.27.0.3"
+# meta_consul_tagged_address_wan_ipv4="172.27.0.3"
+# meta_consul_tags="."
+# 0.969ms
+# Get "http://172.27.0.3:8300/metrics"
+# metrics_path_="/metrics"
+# scheme_="http"
+# _scrape_interval_="15s"
+# scrape_timeout_="10s"
+# job="consul_sd"
