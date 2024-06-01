@@ -5,16 +5,22 @@ set -v
 set -x
 set -u
 
-DOCKER_COMPOSE=$(command -v docker-compose 2>/dev/null || echo "docker compose")
+run_docker_compose() {
+  if command -v docker-compose &>/dev/null; then
+    docker-compose "$@" # Use hyphenated version
+  elif command -v docker compose &>/dev/null; then
+    docker compose "$@" # Use space-separated version
+  else
+    echo "Error: Neither 'docker-compose' nor 'docker compose' found."
+    exit 1 # Exit the script with an error code
+  fi
+}
 
-cd "$(dirname "$0")"
+script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+cd "$script_dir"
 
 echo "Please enter the host IP:"
-read -r host_ip
-# cp -f docker-compose-template.yaml docker-compose.yaml
-# cp -f sentinel-template.conf sentinel.conf
-# sed -i "s/<HOST_IP>/${host_ip}/g" docker-compose.yaml
-# sed -i "s/<HOST_IP>/${host_ip}/g" sentinel.conf
+read -r machine_ip
 
 cat <<EOF >docker-compose.yaml
 services:
@@ -47,7 +53,7 @@ services:
         "--port",
         "26379",
         "--slaveof",
-        "$host_ip",
+        "$machine_ip",
         "16379",
       ]
     healthcheck:
@@ -73,7 +79,7 @@ services:
         "--port",
         "36379",
         "--slaveof",
-        "$host_ip",
+        "$machine_ip",
         "16379",
       ]
     healthcheck:
@@ -162,7 +168,7 @@ port 26379
 sentinel resolve-hostnames yes
 
 # 监控名为 "mymaster" 的 Redis 主服务器，该服务器的地址为 "redis1"，端口为 6379, 且在进行故障转移时，需要至少有 2 个 Sentinel 实例同意。
-sentinel monitor mymaster "$host_ip" 16379 2
+sentinel monitor mymaster "$machine_ip" 16379 2
 
 # 如果主服务器在 <milliseconds> 毫秒内没有响应任何 Sentinel 的 PING, 那么 Sentinel 就会认为主服务器失效。
 sentinel down-after-milliseconds mymaster 30000
@@ -183,14 +189,14 @@ sentinel failover-timeout mymaster 180000
 EOF
 
 wait_for_services() {
-  "$DOCKER_COMPOSE" up -d
+  run_docker_compose up -d
 
   local services
-  services=$("$DOCKER_COMPOSE" config --services)
+  services=$(run_docker_compose config --services)
 
   for service in $services; do
     echo "Waiting for $service to be healthy..."
-    while [ "$(docker inspect --format='{{.State.Health.Status}}' "$("$DOCKER_COMPOSE" ps -q "$service")")" != "healthy" ]; do
+    while [ "$(docker inspect --format='{{.State.Health.Status}}' "$(run_docker_compose ps -q "$service")")" != "healthy" ]; do
       sleep 2
     done
   done
@@ -198,9 +204,9 @@ wait_for_services() {
 
 wait_for_services
 
-"$DOCKER_COMPOSE" exec redis1 redis-cli -p 16379 INFO REPLICATION
-"$DOCKER_COMPOSE" exec redis2 redis-cli -p 26379 INFO REPLICATION
-"$DOCKER_COMPOSE" exec redis3 redis-cli -p 36379 INFO REPLICATION
-"$DOCKER_COMPOSE" exec sentinel3 redis-cli -p 26379 INFO SENTINEL
-"$DOCKER_COMPOSE" exec sentinel3 redis-cli -p 26379 INFO SENTINEL
-"$DOCKER_COMPOSE" exec sentinel3 redis-cli -p 26379 INFO SENTINEL
+run_docker_compose exec redis1 redis-cli -p 16379 INFO REPLICATION
+run_docker_compose exec redis2 redis-cli -p 26379 INFO REPLICATION
+run_docker_compose exec redis3 redis-cli -p 36379 INFO REPLICATION
+run_docker_compose exec sentinel1 redis-cli -p 26379 INFO SENTINEL
+run_docker_compose exec sentinel2 redis-cli -p 26379 INFO SENTINEL
+run_docker_compose exec sentinel3 redis-cli -p 26379 INFO SENTINEL

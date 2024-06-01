@@ -1,5 +1,7 @@
 #!/bin/bash
 
+#!/bin/bash
+
 set -euo pipefail
 
 run_docker_compose() {
@@ -19,3 +21,5 @@ cd "$script_dir"
 
 run_docker_compose rm -sfv
 run_docker_compose down --volumes
+
+rm -f ./startup-config/prometheus.yml

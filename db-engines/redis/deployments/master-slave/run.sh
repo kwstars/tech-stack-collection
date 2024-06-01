@@ -9,7 +9,8 @@ DOCKER_COMPOSE=$(command -v docker-compose 2>/dev/null || echo "docker compose")
 REDIS_MASTER_CLI="docker-compose exec redis-master redis-cli"
 REDIS_SLAVE_CLI="docker-compose exec redis-slave redis-cli"
 
-cd "$(dirname "$0")"
+script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+cd "$script_dir"
 
 "$DOCKER_COMPOSE" up -d
 
