@@ -1,0 +1,79 @@
+services:
+  prometheus:
+    image: prom/prometheus:v2.45.4
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml" # 指定配置文件
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries" # 指定控制台库目录
+      - "--web.console.templates=/usr/share/prometheus/consoles" # 指定控制台模板目录
+      # https://prometheus.io/docs/prometheus/latest/storage/#operational-aspects
+      - "--storage.tsdb.path=/prometheus" # 指定tsdb数据路径
+      - "--storage.tsdb.retention.time=24h" # 数据保留时间, 默认15d
+      - "--storage.tsdb.retention.size=0" # 数据保留大小, 默认0
+      - "--storage.tsdb.wal-compression" # 启用WAL日志压缩
+      # https://prometheus.io/docs/operating/security/#prometheus
+      - "--web.enable-admin-api" # 控制对admin HTTP API的访问，其中包括删除时间序列等功能
+      - "--web.enable-lifecycle" # 支持热更新，直接执行localhost:9090/-/reload立即生效
+      - "--log.level=debug" # 启用调试日志
+    volumes:
+      - ./startup-config/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - 9090:9090
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  grafana:
+    image: grafana/grafana-oss:10.4.2-ubuntu
+    user: root
+    ports:
+      - 13000:3000
+    volumes:
+      # - ./grafana/data:/var/lib/grafana
+      - ./startup-config/grafana/grafana.ini:/etc/grafana/grafana.ini
+      - ./startup-config/grafana/datasources:/etc/grafana/provisioning/datasources
+      - ./startup-config/grafana/dashboards:/etc/grafana/provisioning/dashboards
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    depends_on:
+      - prometheus
+
+  redis:
+    image: redis:7.0
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly yes", "--maxmemory 1G"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  redis_exporter:
+    container_name: redis_exporter
+    image: oliver006/redis_exporter:v1.58.0
+    ports:
+      - "9121:9121"
+    command:
+      - "--redis.addr=redis://redis:6379"
+      # - "--redis.password=slightly-locked"
+    depends_on:
+      - redis
+      - prometheus
+
+networks:
+  default:
+    name: prometheus
+    driver: bridge
