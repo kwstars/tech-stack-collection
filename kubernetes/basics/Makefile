@@ -1,5 +1,6 @@
 TARGETS =  \
 	ingress/nginx/auth/basic \
+	ingress/nginx/https \
 
 .PHONY: $(TARGETS) clean
 
