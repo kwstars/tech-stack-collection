@@ -1,0 +1,37 @@
+services:
+  mysql-master-1:
+    image: mysql:8.0
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpassword
+      - MYSQL_DATABASE=demo
+    command:
+      - --log-bin=master.log
+      - --log-bin-index=master.index
+      - --binlog-do-db=demo # 只记录 demo 数据库的更改到二进制日志中。
+      - --server-id=1
+    # volumes:
+    #   - mysql-master-1:/var/lib/mysql
+    ports:
+      - 3306:3306
+    healthcheck:
+      test: mysqladmin ping -h 127.0.0.1 -u root --password=$$MYSQL_ROOT_PASSWORD
+
+  mysql-master-2:
+    image: mysql:8.0
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpassword
+      - MYSQL_DATABASE=demo
+    command:
+      - --log-bin=master.log
+      - --log-bin-index=master.index
+      - --binlog-do-db=demo
+      - --server-id=2
+    # volumes:
+    #   - mysql-master-2:/var/lib/mysql
+    ports:
+      - 3307:3306
+    healthcheck:
+      test: mysqladmin ping -h 127.0.0.1 -u root --password=$$MYSQL_ROOT_PASSWORD
+# volumes:
+#   mysql-master-1:
+#   mysql-master-2:
