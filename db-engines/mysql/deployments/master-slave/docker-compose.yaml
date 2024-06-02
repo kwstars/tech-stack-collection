@@ -1,0 +1,28 @@
+services:
+  mysql-master:
+    image: mysql:8.0
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpassword
+      - MYSQL_DATABASE=demo # Create a database named demo
+    command:
+      - --server-id=1
+      - --log-bin=master.log # Enable binary log
+      - --log-bin-index=master.index # Binary log index file
+    volumes:
+      - ./init:/docker-entrypoint-initdb.d # Initialization script directory
+    ports:
+      - 3306:3306
+    healthcheck:
+      test: mysqladmin ping -h 127.0.0.1 -u root --password=$$MYSQL_ROOT_PASSWORD
+
+  mysql-slave:
+    image: mysql:8.0
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpassword
+      - MYSQL_DATABASE=demo
+    command:
+      - --server-id=2
+    ports:
+      - 3307:3306
+    healthcheck:
+      test: mysqladmin ping -h 127.0.0.1 -u root --password=$$MYSQL_ROOT_PASSWORD

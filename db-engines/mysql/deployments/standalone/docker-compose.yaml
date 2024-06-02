@@ -6,8 +6,8 @@ services:
     ports:
       - "0.0.0.0:3306:3306"
     volumes:
-      - "mysql_data:/var/lib/mysql:rw"
-      # - "${PWD}/mysql:/docker-entrypoint-initdb.d"
+      - "mysql_data:/var/lib/mysql:rw" # 数据目录
+      - "./init:/docker-entrypoint-initdb.d" # 初始化脚本目录
     environment:
       MYSQL_ROOT_PASSWORD: "mysql"
       TZ: "Asia/Shanghai"
@@ -32,5 +32,4 @@ services:
       test: mysqladmin ping -h 127.0.0.1 -u root --password=$$MYSQL_ROOT_PASSWORD
 
 volumes:
-  mysql_data:
-    driver: local
+  mysql_data: {}
