@@ -42,7 +42,7 @@ MySQL 中有多种锁，它们在不同的粒度和场景下发挥作用，以�
 
 1. **全局锁:**：对整个数据库实例加锁。
 
-   - **lush Tables with Read Lock（FTWRL）**：在执行需要整个数据库一致视图的操作时使用，例如全数据库备份或逻辑导出。在此锁定期间，所有其他会话都被阻止访问数据库。
+   - **Flush Tables with Read Lock（FTWRL）**：在执行需要整个数据库一致视图的操作时使用，例如全数据库备份或逻辑导出。在此锁定期间，所有其他会话都被阻止访问数据库。
      ```sql
      FLUSH TABLES WITH READ LOCK;
      UNLOCK TABLES;
@@ -53,7 +53,9 @@ MySQL 中有多种锁，它们在不同的粒度和场景下发挥作用，以�
    - **表锁（Table Locks）**：这是最基本的锁类型，可以分为读锁和写锁。读锁是共享的，允许多个事务同时读取表中的数据，但不允许写入。写锁是排他的，只允许一个事务写入数据，并阻止其他事务读取或写入数据。
    - **元数据锁（Metadata Locks，MDL）**：这种锁用于保护表的结构。当一个事务正在对表进行 DDL（数据定义语言）操作（如 ALTER TABLE）时，MySQL 会自动获取元数据锁，防止其他事务同时进行 DDL 或 DML（数据操作语言）操作。
    - **意向锁（Intention Locks）**：这种锁是在表级别上设置的，表示一个事务打算在该表的行上获取读锁或写锁。意向锁可以帮助 MySQL 更有效地管理锁冲突。
-   - **自动增量锁（AUTO-INC Locks）**：这种锁用于保护包含自动增量列的表。当一个事务正在插入新的行时，MySQL 会获取自动增量锁，确保自增列的值是唯一的。
+     - Intention Shared Locks (IS): 这种锁表示事务打算在表的某个部分上获取一个共享锁（S 锁）。其他事务可以同时获取该表的 IS 锁或 S 锁，但不能获取排他锁（X 锁）。
+     - Intention Exclusive Locks (IX): 这种锁表示事务打算在表的某个部分上获取一个排他锁（X 锁）。其他事务可以同时获取该表的 IS 锁，但不能获取 IX 锁、S 锁或 X 锁。
+   - **自动增量锁（AUTO-INC Locks）**：这种锁用于保护包含自动增量列（AUTO_INCREMENT）的表。当一个事务正在插入新的行时，MySQL 会获取自动增量锁，确保自增列的值是唯一的。
 
 3. **行级锁**：仅对表中的特定行加锁，分为以下几种：
 
@@ -69,13 +71,11 @@ MySQL 中有多种锁，它们在不同的粒度和场景下发挥作用，以�
 
 1. **共享锁 (S)**：也称为读锁，允许多个事务同时读取同一资源。
 2. **排他锁 (X)**：也称为写锁，只允许一个事务写入资源，其他事务无法访问。
-3. **意向锁 (IS, IX):**
-   - 表明事务打算在表中的行上获取哪种类型的锁。
-   - IS 表示意向共享锁，IX 表示意向排他锁。
+3. **意向锁 (IS, IX)**：表明事务打算在表中的行上获取哪种类型的锁。IS 表示意向共享锁，IX 表示意向排他锁。
 
 **按加锁方式划分：**
 
-1. **自动锁**：MySQL 会根据 SQL 语句自动添加适当的锁。
+1. **自动锁（Automatic Acquisition）**：MySQL 会根据 SQL 语句自动添加适当的锁。
 2. **显式锁**:用户可以使用 `LOCK TABLES`、`SELECT ... LOCK IN SHARE MODE`、`SELECT ... FOR UPDATE` 等语句显式加锁。
 
 **如何选择合适的锁：**
@@ -84,6 +84,22 @@ MySQL 中有多种锁，它们在不同的粒度和场景下发挥作用，以�
 - **表级锁**：适用于并发写入较少的场景，或者需要对整张表进行操作。
 - **行级锁**：适用于高并发写入的场景，可以提高并发性能。
 - **页级锁**：一般不常用，除非使用 BDB 存储引擎。
+
+MySQL 锁机制：
+
+1. **基本原则 1**：MySQL 中的基本加锁单位是 next-key 锁。这种锁的范围是前开后闭区间，也就是说锁住的范围包括起始点之后，但不包括终止点。
+2. **基本原则 2**：在查询过程中，只有实际访问到的对象才会被加锁。
+3. **优化 1**：在唯一索引上的等值查询中，next-key 锁会退化为行锁，只锁住具体的行。
+4. **优化 2**：在索引上的等值查询中，如果向右遍历时，遇到的最后一个值不满足等值条件，next-key 锁会简化为间隙锁，只锁住间隙，不锁具体的行。
+5. ~~**一个 Bug**：在唯一索引上的范围查询中，锁会一直加到第一个不满足条件的值为止，即使这个值本身并不符合查询条件。~~
+
+参考和引用
+
+- https://dev.mysql.com/doc/refman/8.4/en/lock-tables.html
+- https://dev.mysql.com/doc/refman/8.4/en/internal-locking.html
+- https://dev.mysql.com/doc/refman/8.4/en/innodb-locking.html
+- https://stackoverflow.com/questions/39148282/what-are-mysql-innodb-intention-locks-used-for
+- [MySQL 实战 45 讲](https://time.geekbang.org/column/intro/100020801)
 
 ### [DDL](https://dev.mysql.com/doc/refman/8.0/en/innodb-online-ddl-operations.html)
 
