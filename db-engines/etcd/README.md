@@ -47,3 +47,5 @@ ETCD 的主要应用场景包括：
 
 - https://www.slideshare.net/slideshow/unveiling-etcd-architecture-and-source-code-deep-dive/259587952
 - http://play.etcd.io/install
+- https://raft.github.io/raft.pdf
+- https://thesecretlivesofdata.com/raft/
