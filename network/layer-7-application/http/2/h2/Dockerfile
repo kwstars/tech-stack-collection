@@ -3,11 +3,12 @@ FROM nginx:stable-bullseye
 # [可选] 安装 tcpdump 和 tini
 RUN apt-get update && apt-get install -y tcpdump tini
 
-# 将我们的 nginx.conf 文件复制到容器中
+# 将 nginx.conf 文件复制到容器中
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY nginx.crt /etc/nginx/ssl/nginx.crt
 COPY nginx.key /etc/nginx/ssl/nginx.key
 COPY dhparam.pem /etc/nginx/ssl/dhparam.pem
+COPY ca.crt /etc/nginx/ssl/ca.crt
 
 # 创建一个简单的 index.html 文件
 RUN echo "Hello, HTTP/2!" > /usr/share/nginx/html/index.html

@@ -1,0 +1,15 @@
+services:
+  h2c:
+    build:
+      context: .
+    ports:
+      - "8080:80"
+    volumes:
+      - ./:/pcap
+    restart: unless-stopped
+    healthcheck:
+      test:
+        ["CMD-SHELL", "timeout 2 bash -c '</dev/tcp/127.0.0.1/80' || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
