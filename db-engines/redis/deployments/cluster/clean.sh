@@ -17,5 +17,4 @@ run_docker_compose() {
 script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 cd "$script_dir"
 
-run_docker_compose rm -sfv
 run_docker_compose down --volumes

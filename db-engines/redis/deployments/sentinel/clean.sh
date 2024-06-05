@@ -17,7 +17,6 @@ script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 cd "$script_dir"
 
 if [ -f docker-compose.yaml ]; then
-  run_docker_compose rm -sfv
   run_docker_compose down --volumes
 fi
 
