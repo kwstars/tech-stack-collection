@@ -1,0 +1,73 @@
+name: bgp
+defaults:
+  kind: linux
+  image: wbitt/network-multitool
+  # image: wbitt/network-multitool:alpine-extra
+  # image: nicolaka/netshoot:latest
+topology:
+  nodes:
+    k01:
+      kind: k8s-kind
+      startup-config: kind.yaml
+      image: kindest/node:v1.28.7
+      extras:
+        k8s_kind:
+          deploy:
+            wait: 0s
+    spine0:
+      image: quay.io/frrouting/frr:9.1.0
+      binds:
+        - startup-config/spine0/daemons:/etc/frr/daemons
+        - startup-config/spine0/frr.conf:/etc/frr/frr.conf
+    spine1:
+      image: quay.io/frrouting/frr:9.1.0
+      binds:
+        - startup-config/spine1/daemons:/etc/frr/daemons
+        - startup-config/spine1/frr.conf:/etc/frr/frr.conf
+    leaf0:
+      image: quay.io/frrouting/frr:9.1.0
+      binds:
+        - startup-config/leaf0/daemons:/etc/frr/daemons
+        - startup-config/leaf0/frr.conf:/etc/frr/frr.conf
+    leaf1:
+      image: quay.io/frrouting/frr:9.1.0
+      binds:
+        - startup-config/leaf1/daemons:/etc/frr/daemons
+        - startup-config/leaf1/frr.conf:/etc/frr/frr.conf
+    br-leaf0:
+      kind: bridge
+    br-leaf1:
+      kind: bridge
+    k01-control-plane:
+      kind: ext-container
+      exec:
+        - ip addr add 10.1.5.10/24 dev net0
+        - ip route replace default via 10.1.5.1
+    k01-worker:
+      kind: ext-container
+      exec:
+        - ip addr add 10.1.5.11/24 dev net0
+        - ip route replace default via 10.1.5.1
+    k01-worker2:
+      kind: ext-container
+      exec:
+        - ip addr add 10.1.8.10/24 dev net0
+        - ip route replace default via 10.1.8.1
+    k01-worker3:
+      kind: ext-container
+      network-mode: container:worker3
+      exec:
+        - ip addr add 10.1.8.11/24 dev net0
+        - ip route replace default via 10.1.8.1
+
+  links:
+    - endpoints: ["br-leaf0:br-leaf0-net0", "k01-control-plane:net0"]
+    - endpoints: ["br-leaf0:br-leaf0-net1", "k01-worker:net0"]
+    - endpoints: ["br-leaf1:br-leaf1-net0", "k01-worker2:net0"]
+    - endpoints: ["br-leaf1:br-leaf1-net1", "k01-worker3:net0"]
+    - endpoints: ["leaf0:eth1", "spine0:eth1"]
+    - endpoints: ["leaf0:eth2", "spine1:eth1"]
+    - endpoints: ["leaf0:eth3", "br-leaf0:br-leaf0-net2"]
+    - endpoints: ["leaf1:eth1", "spine0:eth2"]
+    - endpoints: ["leaf1:eth2", "spine1:eth2"]
+    - endpoints: ["leaf1:eth3", "br-leaf1:br-leaf1-net2"]
