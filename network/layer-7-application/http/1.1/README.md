@@ -8,5 +8,3 @@
 - [Hypertext Transfer Protocol (HTTP 1.1)：Caching](https://datatracker.ietf.org/doc/html/rfc7234)
 - [Hypertext Transfer Protocol (HTTP 1.1)：Range Requests](https://datatracker.ietf.org/doc/html/rfc7233)
 - [Hypertext Transfer Protocol (HTTP 1.1)：Authentication](https://datatracker.ietf.org/doc/html/rfc7235)
-- [Hypertext Transfer Protocol Version 2 (HTTP/2)](https://datatracker.ietf.org/doc/html/rfc7540)
-- [HTTP/3](https://datatracker.ietf.org/doc/html/rfc9114)
