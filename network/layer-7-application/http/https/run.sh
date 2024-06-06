@@ -67,7 +67,9 @@ wait_for_services
 sudo sed -i '/\.bar\.com$/d' /etc/hosts
 sudo tee -a /etc/hosts <<<"127.0.0.1 foo.bar.com"
 # --http2-prior-knowledge 可以节省协商过程的时间，但如果服务器不支持 HTTP/2，连接会失败。--http2 更加安全，因为它可以回退到 HTTP/1.1，但可能会稍微慢一些。
-# SSLKEYLOGFILE=/mnt/c/Users/Kira/sslkeylog/sslkeylog.log curl --cacert ./ca.crt --http1.1 --tlsv1.2 --tls-max 1.2 https://foo.bar.com
-# SSLKEYLOGFILE=/mnt/c/Users/Kira/sslkeylog/sslkeylog.log curl --cacert ./ca.crt --http1.1 --tlsv1.3 https://foo.bar.com
-# SSLKEYLOGFILE=/mnt/c/Users/Kira/sslkeylog/sslkeylog.log curl --cacert ./ca.crt --http2 --tlsv1.2 --tls-max 1.2 https://foo.bar.com
-# SSLKEYLOGFILE=/mnt/c/Users/Kira/sslkeylog/sslkeylog.log curl --cacert ./ca.crt --http2 --tlsv1.3 https://foo.bar.com
+# SSLKEYLOGFILE=/mnt/c/Users/Kira/sslkeylog/sslkeylog.log curl -vso --capath ./ --cacert ca.crt --http1.1 --tlsv1.2 --tls-max 1.2 https://foo.bar.com
+# SSLKEYLOGFILE=/mnt/c/Users/Kira/sslkeylog/sslkeylog.log curl -vso --capath ./ --cacert ./ca.crt --http1.1 --tlsv1.3 https://foo.bar.com
+# SSLKEYLOGFILE=/mnt/c/Users/Kira/sslkeylog/sslkeylog.log curl -vso --capath ./ --cacert ./ca.crt --http2 --tlsv1.2 --tls-max 1.2 https://foo.bar.com
+# SSLKEYLOGFILE=/mnt/c/Users/Kira/sslkeylog/sslkeylog.log curl -vso --capath ./ --cacert ./ca.crt --http2 --tlsv1.3 https://foo.bar.com
+# curl -vso /dev/null --http2 https://www.facebook.com --no-alpn
+# nghttp --cert="./ca.crt" -nv https://foo.bar.com

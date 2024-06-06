@@ -9,15 +9,28 @@
 
 ![Figure 4.3 HTTP/2 streams are similar to HTTP/1 connections](https://drek4537l1klr.cloudfront.net/pollard/Figures/fig7_1_alt.jpg)
 
-## 创建 HTTP/2 连接的方法
+## [创建 HTTP/2 连接](https://datatracker.ietf.org/doc/html/rfc7540#section-3)
 
-1. **使用 HTTPS 协商（Use HTTPS negotiation）：** 这是最常见的方法，游览器和服务器在 TLS 握手过程中通过 ALPN (Application-Layer Protocol Negotiation) 扩展协商使用 HTTP/2 协议。这种方法的优点是安全，因为所有的通信都是加密的。
+### 连接方式
 
-2. **使用 HTTP Upgrade 头部（Use the HTTP Upgrade header）：** 客户端在 HTTP/1.1 请求中发送一个 Upgrade 头部，请求升级到 HTTP/2。如果服务器支持 HTTP/2，它会发送一个 101 Switching Protocols 响应，然后客户端和服务器就可以开始使用 HTTP/2 进行通信。这种方法的缺点是不安全，因为通信内容没有加密。
+1. **使用 HTTP/1.1 升级到 HTTP/2（h2c）**：使用 HTTP Upgrade 头部（Use the HTTP Upgrade header）， 客户端在 HTTP/1.1 请求中发送一个 Upgrade 头部，请求升级到 HTTP/2。如果服务器支持 HTTP/2，它会发送一个 101 Switching Protocols 响应，然后客户端和服务器就可以开始使用 HTTP/2 进行通信。这种方法的缺点是不安全，因为通信内容没有加密。
+1. **通过 TLS 建立 HTTP/2 连接（h2）**：使用 HTTPS 协商（Use HTTPS negotiation）这是最常见的方法，游览器和服务器在 TLS 握手过程中通过 ALPN (Application-Layer Protocol Negotiation) 扩展协商使用 HTTP/2 协议。这种方法的优点是安全，因为所有的通信都是加密的。
+1. **Prior Knowledge:** 如果客户端事先知道服务器支持 HTTP/2，可以直接发送 HTTP/2 连接前言 (Connection Preface)。
 
-3. **使用先验知识（Use prior knowledge）：** 在这种方法中，客户端已经知道服务器支持 HTTP/2，所以它直接发送 HTTP/2 的请求。这种方法需要客户端和服务器之间有一些先验的协议或者配置。
+### **连接前言**
 
-4. HTTP Alternative Services：使用 HTTP/1.1 或 HTTP/2 的 Alt-Svc 响应头部，允许服务器告诉客户端可以使用其他的协议或网络位置（主机和端口）来访问资源。服务器在响应中包含一个 ALTSVC 头部，告诉客户端可以使用 HTTP/2 连接到一个指定的主机和端口。然后客户端可以选择使用这个新的连接进行后续的请求。
+**HTTP/2 连接前言 (Connection Preface)**
+
+- **客户端：** 以 24 字节的字符串 "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n" 开头，后跟一个 SETTINGS 帧。
+  1. **Magic String：** 这是一个固定的 24 字节的字符串 "PRI \* HTTP/2.0\r\n\r\nSM\r\n\r\n"。这个字符串在所有的 HTTP/2 连接中都是一样的，用来帮助服务器识别这是一个 HTTP/2 连接。
+
+  2. **SETTINGS Frame：** 这是一个 HTTP/2 帧，类型为 SETTINGS。这个帧包含了客户端的一些配置参数，例如最大并发流数量、窗口大小等。服务器会在收到这个帧后回应一个 SETTINGS 帧，以确认这些参数。
+- **服务器：** 仅发送一个 SETTINGS 帧。
+
+**连接前言的作用**
+
+- **确认协议版本：** 客户端和服务器通过发送连接前言来确认对方支持 HTTP/2。
+- **初始化设置：** SETTINGS 帧用于设置 HTTP/2 连接的参数。
 
 ### Use HTTPS negotiation
 
@@ -38,60 +51,15 @@
 
 ```bash
 openssl s_client -crlf -connect www.baidu.com:443 -quiet
-curl -vso /dev/null --http2 https://www.baidu.com
-curl -vso /dev/null --http2 https://www.baidu.com --no-alpn
+
 nghttp -anv https://www.facebook.com I grep -E "frame <|SETTINGs|window_size_increment"
-```
-
-### The HTTP/2 preface message
-
-HTTP/2 preface 是在 HTTP/2 连接建立时发送的一段特定的数据，它的目的是为了确认双方都支持 HTTP/2 协议，并且准备好进行 HTTP/2 通信。
-
-HTTP/2 preface 由两部分组成：
-
-1. **Magic String：** 这是一个固定的 24 字节的字符串 "PRI \* HTTP/2.0\r\n\r\nSM\r\n\r\n"。这个字符串在所有的 HTTP/2 连接中都是一样的，用来帮助服务器识别这是一个 HTTP/2 连接。
-
-2. **SETTINGS Frame：** 这是一个 HTTP/2 帧，类型为 SETTINGS。这个帧包含了客户端的一些配置参数，例如最大并发流数量、窗口大小等。服务器会在收到这个帧后回应一个 SETTINGS 帧，以确认这些参数。
-
-HTTP/2 preface 必须是客户端在新的 HTTP/2 连接中发送的第一个数据，服务器在收到并验证了 preface 后，才会开始处理后续的 HTTP/2 帧。如果服务器没有收到正确的 preface，或者 preface 的格式不正确，服务器会关闭连接。
-
-```http
-Frame 12: 223 bytes on wire (1784 bits), 223 bytes captured (1784 bits)
-Linux cooked capture v2
-Internet Protocol Version 4, Src: 192.168.160.1, Dst: 192.168.160.2
-Transmission Control Protocol, Src Port: 43532, Dst Port: 443, Seq: 320, Ack: 1542, Len: 151
-Transport Layer Security
-HyperText Transfer Protocol 2
-    Stream: Magic
-        Magic: PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n
-HyperText Transfer Protocol 2
-    Stream: SETTINGS, Stream ID: 0, Length 18
-        Length: 18
-        Type: SETTINGS (4)
-        Flags: 0x00
-        0... .... .... .... .... .... .... .... = Reserved: 0x0
-        .000 0000 0000 0000 0000 0000 0000 0000 = Stream Identifier: 0
-        Settings - Max concurrent streams : 100
-        Settings - Initial Windows size : 33554432
-        Settings - Enable PUSH : 0
-HyperText Transfer Protocol 2
-    Stream: WINDOW_UPDATE, Stream ID: 0, Length 4
-        Length: 4
-        Type: WINDOW_UPDATE (8)
-        Flags: 0x00
-        0... .... .... .... .... .... .... .... = Reserved: 0x0
-        .000 0000 0000 0000 0000 0000 0000 0000 = Stream Identifier: 0
-        0... .... .... .... .... .... .... .... = Reserved: 0x0
-        .000 0001 1111 1111 0000 0000 0000 0001 = Window Size Increment: 33488897
-        [Connection window size (before): 65535]
-        [Connection window size (after): 33554432]
 ```
 
 ## HTTP/2 帧
 
 ### [帧的格式](https://datatracker.ietf.org/doc/html/rfc7540#section-4.1)
 
-```bash
+```
     +-----------------------------------------------+
     |                 Length (24)                   |
     +---------------+---------------+---------------+
@@ -127,21 +95,94 @@ HyperText Transfer Protocol 2
 - 不同类型的帧具有不同的 Payload 格式和含义。
 - 客户端和服务器必须能够识别并处理所有定义的帧类型。
 
-### [HTTP/2 中的关键帧类型介绍](https://datatracker.ietf.org/doc/html/rfc7540#section-6)
+### [HTTP/2 中的帧类型](https://datatracker.ietf.org/doc/html/rfc7540#section-6)
 
-#### DATA 帧
+#### DATA（type=0x0）
 
-用于传输请求或响应的实际 payload 数据，如 HTML 文件主体内容、图片数据等。DATA 帧受流量控制的约束，确保发送方不会发送过多的数据。
+DATA 帧 用于传输请求或响应的实际 payload 数据，如 HTML 文件主体内容、图片数据等。
 
-#### HEADERS 帧
+```
+    +---------------+
+    |Pad Length? (8)|
+    +---------------+-----------------------------------------------+
+    |                            Data (*)                         ...
+    +---------------------------------------------------------------+
+    |                           Padding (*)                       ...
+    +---------------------------------------------------------------+
 
-用于开启一个新的流，并传输 HTTP 首部元数据（header），如请求方法、路径、状态码等。HEADERS 帧可以分多个帧传输，并使用 HPACK 压缩算法来减少传输的数据量。
+                       Figure 6: DATA Frame Payload
+```
 
-#### PRIORITY 帧
+- **Pad Length (可选)**： 填充长度，仅当 PADDED 标志置位时存在。
+- **Data**： 应用数据。
+- **Padding (可选)**： 填充字节，用于混淆消息大小，不含应用语义，发送时必须全为零。
 
-PRIORITY 帧（type=0x2）用于指定某个流的优先级，影响服务器处理和发送数据的顺序。PRIORITY 帧可以用于初始设置流的优先级，也可以在传输过程中动态调整优先级。
+**标志**
+
+- **END_STREAM (0x1)**： 表示这是该流的最后一帧。
+- **PADDED (0x8)**： 表示存在 Pad Length 和 Padding 字段。
+
+**规则**
+
+- DATA 帧必须与流关联，流标识符为 0 视为 PROTOCOL_ERROR。
+- 仅当流处于 "open" 或 "half-closed (remote)" 状态时，才能发送 DATA 帧。
+- 整个 DATA 帧（包括填充）受流量控制。
+- Padding 长度不得超过帧净荷长度，否则视为 PROTOCOL_ERROR。
+- 包含值为 0 的 Pad Length 字段可使帧长度增加 1 字节。
+
+#### HEADERS（type=0x1）
+
+HEADERS 帧用于开启新流并传输 HTTP 头部信息，可以携带可选的填充 (padding) 和优先级 (priority) 信息。
+
+**结构**
+
+```
+    +---------------+
+    |Pad Length? (8)|
+    +-+-------------+-----------------------------------------------+
+    |E|                 Stream Dependency? (31)                     |
+    +-+-------------+-----------------------------------------------+
+    |  Weight? (8)  |
+    +-+-------------+-----------------------------------------------+
+    |                   Header Block Fragment (*)                 ...
+    +---------------------------------------------------------------+
+    |                           Padding (*)                       ...
+    +---------------------------------------------------------------+
+
+                      Figure 7: HEADERS Frame Payload
+```
+
+- **Pad Length (可选)**： 填充长度，仅当 PADDED 标志置位时存在。
+- **E**： 优先级独占标志，仅当 PRIORITY 标志置位时存在。
+- **Stream Dependency (可选)**： 依赖的流 ID，仅当 PRIORITY 标志置位时存在。
+- **Weight (可选)**： 优先级权重，仅当 PRIORITY 标志置位时存在。
+- **Header Block Fragment**： 头部块片段，使用 HPACK 压缩。
+- **Padding (可选)**： 填充字节，用于混淆消息大小，不含应用语义，发送时必须全为零。
+
+**标志**
+
+- **END_STREAM (0x1)**： 表示这是该流的最后一个头部块。
+- **END_HEADERS (0x4)**： 表示当前帧包含完整的头部块，没有后续 CONTINUATION 帧。
+- **PADDED (0x8)**： 表示存在 Pad Length 和 Padding 字段。
+- **PRIORITY (0x20)**： 表示存在优先级信息 (E, Stream Dependency, Weight)。
+
+**规则**
+
+- HEADERS 帧必须与流关联，流标识符为 0 视为 PROTOCOL_ERROR。
+- 如果头部块过大，需要使用 CONTINUATION 帧继续传输。
+- 没有 END_HEADERS 标志的 HEADERS 帧必须后跟 CONTINUATION 帧。
+- 填充不得超过头部块片段的剩余空间，否则视为 PROTOCOL_ERROR。
+- 可以在 HEADERS 帧中包含优先级信息，减少新流创建时的优先级调整开销。
+
+#### PRIORITY（type=0x2）
+
+PRIORITY 帧用于指定某个流的优先级，影响服务器处理和发送数据的顺序。PRIORITY 帧可以用于初始设置流的优先级，也可以在传输过程中动态调整优先级。
 
 ```bash
+nghttp -nv https://www.163.com | grep -A3 "PRIORITY frame"
+```
+
+```
     +-+-------------------------------------------------------------+
     |E|                  Stream Dependency (31)                     |
     +-+-------------+-----------------------------------------------+
@@ -151,28 +192,48 @@ PRIORITY 帧（type=0x2）用于指定某个流的优先级，影响服务器处
                      Figure 8: PRIORITY Frame Payload
 ```
 
-1. PRIORITY 帧用于指定某个[流的优先级](https://datatracker.ietf.org/doc/html/rfc7540#section-5.3)。
-2. PRIORITY 帧可以在任何流状态下发送，包括 idle 或 closed 状态。
-3. PRIORITY 帧的 payload 包含:
-   - 一个标志位(E)，指示是否为独占依赖(exclusive)
-   - 31 位流标识符，表示该流依赖的流
-   - 8 位整数表示流的权重值
-4. PRIORITY 帧定义了流依赖(stream dependency)的概念，低优先级流依赖于高优先级流的流控制。
-5. PRIORITY 帧长度不等于 5octets 时，将被视为 FRAME_SIZE_ERROR 错误。
-6. 如果 PRIORITY 帧的流标识符为 0x0，接收者必须响应 PROTOCOL_ERROR 错误。
-7. PRIORITY 帧始终指定一个流，不能指定整个连接。
-8. PRIORITY 帧可以用于"idle"或"closed"状态的流，以重新设置优先级。
-9. 一个 PRIORITY 帧可以影响指定流及其依赖流的处理，但不影响该流上的帧传输。
+- **E**： 优先级独占标志，1 表示独占依赖，0 表示非独占依赖。
+- **Stream Dependency**： 依赖的流 ID。
+- **Weight**： 优先级权重 (1-256)。
 
-#### RST_STREAM 帧
+**规则**
 
-用于终止一个流，通常在发生错误时使用。RST_STREAM 帧包含一个错误码，用于说明终止流的原因。
+- PRIORITY 帧用于指定某个[流的优先级](https://datatracker.ietf.org/doc/html/rfc7540#section-5.3)。PRIORITY 帧始终指定一个流，不能指定整个连接。
+- PRIORITY 帧定义了流依赖(stream dependency)的概念，低优先级流依赖于高优先级流的流控制。
+- PRIORITY 帧长度必须为 5 字节，否则视为 FRAME_SIZE_ERROR。
+- 如果 PRIORITY 帧的流标识符为 `0x0`，接收者必须响应 PROTOCOL_ERROR 错误。
+- PRIORITY 帧可以用于"idle"或"closed"状态的流，以重新设置优先级。
+- 一个 PRIORITY 帧可以影响指定流及其依赖流的处理，但不影响该流上的帧传输。
+- PRIORITY 帧不能插入到 HEADERS 帧和 CONTINUATION 帧序列之间。
 
-#### SETTINGS 帧
+#### RST_STREAM （type=0x3）
 
-SETTINGS 帧（type=0x4）用于在连接建立时或连接过程中协商 HTTP/2 连接级别的参数，如头部表大小、初始流控制窗口大小等。SETTINGS 帧可以由客户端或服务器发送。
+RST_STREAM 帧用于终止一个流，通常在发生错误时使用。RST_STREAM 帧包含一个错误码，用于说明终止流的原因。可以由发送方或接收方发送。
 
-```bash
+```
+    +---------------------------------------------------------------+
+    |                        Error Code (32)                        |
+    +---------------------------------------------------------------+
+
+                    Figure 9: RST_STREAM Frame Payload
+```
+
+- **Error Code**： 32 位无符号整数，表示终止流的原因（[错误码定义](https://datatracker.ietf.org/doc/html/rfc7540#section-7)）。
+
+**规则**
+
+- 终止流，并将其状态转为 "closed"。
+- 接收方收到后，不能再发送其他帧（PRIORITY 除外）。
+- 发送方发送后，仍需接收和处理对方可能已发送的帧。
+- 必须关联到一个流，流标识符为 0x0 时，视为连接错误 (PROTOCOL_ERROR)。
+- 不能发送给处于 "idle" 状态的流，否则视为连接错误 (PROTOCOL_ERROR)。
+- 长度必须为 4 字节，否则视为连接错误 (FRAME_SIZE_ERROR)。
+
+#### SETTINGS （type=0x4）
+
+SETTINGS 帧用于传输配置参数，影响端点间的通信方式，也用于确认参数的接收。
+
+```
     +-------------------------------+
     |       Identifier (16)         |
     +-------------------------------+-------------------------------+
@@ -182,42 +243,155 @@ SETTINGS 帧（type=0x4）用于在连接建立时或连接过程中协商 HTTP/
                          Figure 10: Setting Format
 ```
 
-1. SETTINGS 帧用于传递影响端点通信方式的配置参数，例如对对等方行为的约束和偏好。
-2. SETTINGS 帧的参数不是协商的，而是描述发送方自身的特征，由接收方使用。
-3. 两端点可以为同一参数设置不同值。
-4. SETTINGS 帧必须在连接建立时由双方发送，并可在连接生命周期内的任何时候发送。
-5. SETTINGS 帧定义了 ACK 标志，接收方在应用了新参数后必须立即用 ACK=1 回复一个 SETTINGS 帧。
-6. SETTINGS 帧的流标识符必须为 0，否则将被视为 PROTOCOL_ERROR 错误。
-7. SETTINGS 帧有效载荷由一个或多个参数构成，每个参数（Identifier）包括 16 位标识符和 32 位值。
-8. RFC 定义了以下参数：
-   1. `SETTINGS_HEADER_TABLE_SIZE`：定义 HTTP/2 头部压缩（HPACK）使用的最大头部表大小。
-   2. `SETTINGS_ENABLE_PUSH`：定义服务器是否可以向客户端推送资源。
-   3. `SETTINGS_MAX_CONCURRENT_STREAMS`：定义一个端点可能同时打开的最大并发流数量。
-   4. `SETTINGS_INITIAL_WINDOW_SIZE`：定义流控制窗口的初始大小。
-   5. `SETTINGS_MAX_FRAME_SIZE`：定义发送端允许的最大帧大小。
-   6. `SETTINGS_MAX_HEADER_LIST_SIZE`：定义发送端允许的最大头部列表大小。
-9. 未知参数应被忽略。参数以出现顺序处理，参数值以最新出现值为准。
-10. 帧长度不是 6 的倍数时将被视为 FRAME_SIZE_ERROR 错误。
+好的，以下是总结 HTTP/2 SETTINGS 帧的描述，语言尽量简短：
 
-总之,SETTINGS 帧规定了 HTTP/2 连接双方的各种配置参数,是实现流控制、并发控制等功能的基础。
+**SETTINGS 帧 (type=0x4)**
 
-#### PUSH_PROMISE 帧
+SETTINGS 帧用于传输配置参数，影响端点间的通信方式，也用于确认参数的接收。
 
-允许服务器主动向客户端推送资源，在客户端请求之前预先发送。PUSH_PROMISE 帧包含被推送资源的头部信息，客户端可以选择接受或拒绝推送。
+**结构**
 
-#### PING 帧
+```
++-------------------------------+
+|       Identifier (16)         |
++-------------------------------+-------------------------------+
+|                        Value (32)                             |
++---------------------------------------------------------------+
+```
 
-用于测试连接的存活状态和测量往返时间（RTT）。PING 帧不携带任何应用数据，客户端和服务器都可以发送。
+- **Identifier:** 参数标识符。
+- **Value:** 参数值。
 
-#### GOAWAY 帧
+**标志**
 
-用于通知对方即将关闭连接，并指定最后一个被处理的流的 ID。GOAWAY 帧可以由客户端或服务器发送。
+- **ACK (0x1):** 表示这是一个 SETTINGS 确认帧。
 
-#### WINDOW_UPDATE 帧
+**规则**
 
-WINDOW_UPDATE 帧（type=0x8）用于实现流量控制。
+- 连接建立时双方必须发送，之后可随时发送。
+- 每个参数替换现有值，按顺序处理。
+- 接收方需立即响应 ACK 帧。
+- 仅作用于连接，流标识符必须为 0x0，否则视为 PROTOCOL_ERROR。
+- 长度必须为 6 的倍数，否则视为 FRAME_SIZE_ERROR。
 
-```bash
+**预定义参数**
+
+- SETTINGS_HEADER_TABLE_SIZE (0x1): 定义 HTTP/2 头部压缩（HPACK）使用的最大头部表大小。
+- SETTINGS_ENABLE_PUSH (0x2): 定义服务器是否可以向客户端推送资源。
+- SETTINGS_MAX_CONCURRENT_STREAMS (0x3): 定义一个端点可能同时打开的最大并发流数量。
+- SETTINGS_INITIAL_WINDOW_SIZE (0x4): 流级别的初始流量控制窗口大小。
+- SETTINGS_MAX_FRAME_SIZE (0x5): 定义发送端允许的最大帧大小。
+- SETTINGS_MAX_HEADER_LIST_SIZE (0x6): 定义发送端允许的最大头部列表大小。
+
+**Settings Synchronization**
+
+SETTINGS 帧的接收方必须尽快应用更新后的参数，并立即发送带有 ACK 标志的 SETTINGS 帧进行确认。如果发送方在合理时间内未收到确认，可以发出 SETTINGS_TIMEOUT 连接错误。
+
+#### PUSH_PROMISE（type=0x5）
+
+PUSH_PROMISE 帧用于通知对端将要发起的流 (stream)。它包含将要创建的流的 ID 和提供额外上下文的头部信息。
+
+```
+    +---------------+
+    |Pad Length? (8)|
+    +-+-------------+-----------------------------------------------+
+    |R|                  Promised Stream ID (31)                    |
+    +-+-----------------------------+-------------------------------+
+    |                   Header Block Fragment (*)                 ...
+    +---------------------------------------------------------------+
+    |                           Padding (*)                       ...
+    +---------------------------------------------------------------+
+
+                  Figure 11: PUSH_PROMISE Payload Format
+```
+
+- **Pad Length (可选)**： 填充长度，仅当 PADDED 标志置位时存在。
+- **R**： 保留位。
+- **Promised Stream ID**： 预留的流 ID，必须是发送方下一个流的有效选择。
+- **Header Block Fragment**： 包含请求头字段的头部块片段。
+- **Padding (可选)**： 填充字节。
+
+**标志**
+
+- **END_HEADERS (0x4)**： 表示当前帧包含完整的头部块，没有后续 CONTINUATION 帧。
+- **PADDED (0x8)**： 表示存在 Pad Length 和 Padding 字段。
+
+**规则**
+
+- 只能发送在对端发起的 "open" 或 "half-closed (remote)" 状态的流上。
+- 流标识符为 0x0 时，视为连接错误 (PROTOCOL_ERROR)。
+- 预留的流不需要按顺序使用。
+- 若对端 SETTINGS_ENABLE_PUSH 设置为 0，则不能发送 PUSH_PROMISE，视为 PROTOCOL_ERROR。
+- 接收方可以通过 RST_STREAM 拒绝被允许推送的流。
+- PUSH_PROMISE 会修改连接状态，首部压缩状态，并将被允许推送的流置于"reserved"状态。
+- 发送方不能在 "open" 或 "half-closed (remote)" 状态之外的流上发送 PUSH_PROMISE。
+- 忽略 PUSH_PROMISE 会导致流状态不确定，视为 PROTOCOL_ERROR。
+- 预留非法流 ID 视为 PROTOCOL_ERROR。
+- 可包含填充，格式与 DATA 帧相同。
+
+#### PING（type=0x6）
+
+PING 帧用于测试连接的存活状态和测量往返时间（RTT）。PING 帧不携带任何应用数据，客户端和服务器都可以发送。
+
+```
+    +---------------------------------------------------------------+
+    |                                                               |
+    |                      Opaque Data (64)                         |
+    |                                                               |
+    +---------------------------------------------------------------+
+
+                      Figure 12: PING Payload Format
+```
+
+- **Opaque Data**： 8 字节数据，可由发送方任意设置。
+
+**标志**
+
+- **ACK (0x1)**： 表示这是一个 PING 响应帧。
+
+**规则**
+
+- 接收未设置 ACK 标志的 PING 帧时，必须发送设置了 ACK 标志的 PING 响应帧，且 Payload 相同。
+- PING 响应帧应具有比其他帧更高的优先级。
+- PING 帧不与任何流关联，流标识符必须为 0x0，否则视为连接错误 (PROTOCOL_ERROR)。
+- PING 帧长度必须为 8 字节，否则视为连接错误 (FRAME_SIZE_ERROR)。
+
+#### GOAWAY（type=0x7）
+
+GOAWAY 帧用于关闭连接或通知严重错误情况，并指定最后一个被处理的流的 ID。GOAWAY 帧可以由客户端或服务器发送。
+
+```
+    +-+-------------------------------------------------------------+
+    |R|                  Last-Stream-ID (31)                        |
+    +-+-------------------------------------------------------------+
+    |                      Error Code (32)                          |
+    +---------------------------------------------------------------+
+    |                  Additional Debug Data (*)                    |
+    +---------------------------------------------------------------+
+
+                     Figure 13: GOAWAY Payload Format
+```
+
+- **Last-Stream-ID:** 发送方可能已处理或将处理的最后一个对端发起流的标识符。
+- **Error Code:** 关闭连接的原因。
+- **Additional Debug Data (可选):** 诊断用途的数据。
+
+**规则**
+
+- 仅作用于连接，流标识符必须为 0x0，否则视为 PROTOCOL_ERROR。
+- Last-Stream-ID 指示可能已处理的最高编号流，0 表示未处理任何流。
+- 接收方收到 GOAWAY 帧后不能打开新流。
+- 低于等于 Last-Stream-ID 的流仍可能成功完成。
+- 关闭连接前应发送 GOAWAY 帧，以便对端了解流处理情况。
+- 可发送多个 GOAWAY 帧，但 Last-Stream-ID 不能增加。
+- 发送 GOAWAY 后，可丢弃 Last-Stream-ID 之上的新流，但仍需处理影响连接状态的帧。
+- Debug Data 仅用于诊断，可能包含敏感数据，需谨慎处理。
+
+#### WINDOW_UPDATE （type=0x8）
+
+WINDOW_UPDATE 帧用于实现流量控制，调整流或连接的流量控制窗口大小。
+
+```
     +-+-------------------------------------------------------------+
     |R|              Window Size Increment (31)                     |
     +-+-------------------------------------------------------------+
@@ -225,25 +399,204 @@ WINDOW_UPDATE 帧（type=0x8）用于实现流量控制。
                   Figure 14: WINDOW_UPDATE Payload Format
 ```
 
-1. 流量控制在流级别和连接级别运行。
-2. 流量控制是逐跳的，中间节点不转发 WINDOW_UPDATE 帧。
-3. 只有 DATA 帧受流量控制，其他帧必须被处理，除非资源不足。
-4. WINDOW_UPDATE 帧的负载表示接收方可以额外接收的字节数。
-5. WINDOW_UPDATE 帧可以作用于特定的流或整个连接。
-6. 窗口增量为 0 的 WINDOW_UPDATE 帧将被视为错误。
-7. 流关闭后，WINDOW_UPDATE 帧仍可能被发送。
-8. 接收方必须更新受流控制帧影响的连接级流量控制窗口计数。
-9. WINDOW_UPDATE 帧长度不等于 4 字节时，将被视为连接错误。
+- **Window Size Increment:** 接收方准备额外接收的字节数 (1 ~ 2^31-1)。
 
-##### CONTINUATION 帧
+**规则**
 
-用于在 HEADERS 帧或 PUSH_PROMISE 帧之后继续传输头部信息。当一个 HEADERS 或 PUSH_PROMISE 帧无法完整包含所有头部信息时，CONTINUATION 帧会被用来分段传输剩余的头部信息。CONTINUATION 帧必须紧跟在 HEADERS 或 PUSH_PROMISE 帧之后，不能插入其他类型的帧。
+- 可作用于特定流 (Stream ID > 0) 或整个连接 (Stream ID = 0)。
+- 流量控制窗口增量为 0 时，若作用于特定流，则视为 PROTOCOL_ERROR 错误。
+- 发送方或接收方都可以发送。
+- 接收方收到后，按增量值增加对应流或连接的流量控制窗口大小。
+- 流量控制窗口最大为 2^31-1 字节，超出则发送方/接收方发送 FLOW_CONTROL_ERROR 错误并终止流/连接。
+
+**流量控制窗口 (Flow-Control Window)**
+
+- 每个发送方在每个流和整个连接上都维护一个流量控制窗口。
+- 窗口大小表示发送方允许发送的字节数，反映接收方的缓冲能力。
+- 发送方不能发送超过任一窗口大小的帧，但可以发送长度为 0 的 END_STREAM 帧。
+- 帧头 (9 字节) 不计入流量控制。
+- 发送帧后，发送方减少对应窗口大小。
+- 接收方消费数据后，发送 WINDOW_UPDATE 帧增加窗口大小。
+- 初始窗口大小为 65535 字节，可通过 SETTINGS_INITIAL_WINDOW_SIZE 调整。
+- SETTINGS 帧可修改活动流的窗口大小，可能导致窗口变为负值，此时发送方须等待 WINDOW_UPDATE 帧。
+- 接收方可发送 SETTINGS 帧减小窗口大小，但必须准备好接收超出窗口的数据。
+
+**要点**
+
+- WINDOW_UPDATE 用于动态调整流量控制窗口大小。
+- 流量控制确保发送方不会发送超出接收方处理能力的数据。
+- 窗口大小是发送方和接收方之间的一种协商机制。
+
+#### CONTINUATION（type=0x9）
+
+CONTINUATION 帧用于继续传输头部块片段 (Header Block Fragment)。
+
+```
+    +---------------------------------------------------------------+
+    |                   Header Block Fragment (*)                 ...
+    +---------------------------------------------------------------+
+
+                   Figure 15: CONTINUATION Frame Payload
+```
+
+- **Header Block Fragment:** 头部块片段，使用 HPACK 压缩。
+
+**标志**
+
+- **END_HEADERS (0x4):** 表示这是头部块的最后一帧。
+
+**规则**
+
+- 必须与流关联，流标识符为 0x0 视为 PROTOCOL_ERROR。
+- 必须跟随在未设置 END_HEADERS 标志的 HEADERS、PUSH_PROMISE 或 CONTINUATION 帧之后，否则视为 PROTOCOL_ERROR。
+- 如果未设置 END_HEADERS 标志，则必须后跟另一个 CONTINUATION 帧。
+- 改变连接状态，与头部压缩相关。
 
 **另外，HTTP/2 中还有一些其他的帧类型，如：**
 
 - **ALTSVC 帧**：用于通告可替代的服务。这个帧允许服务器通知客户端存在其他协议或地址可用于访问相同的资源。例如，服务器可以通知客户端它支持 HTTP/3 或者 QUIC 协议，客户端可以选择使用这些新协议来提高性能。ALTSVC 帧可以携带关于替代服务的信息，如协议标识符、主机名、端口号等。
 
 - **ORIGIN 帧**：用于标识服务器的 Origin。这个帧允许服务器声明与当前连接关联的 Origin，这对于实现 HTTP/2 的连接合并（Connection Coalescing）特性非常重要。连接合并允许客户端在多个 HTTP/2 连接之间共享 TCP 连接，从而减少连接建立的开销。ORIGIN 帧可以携带 Origin 的信息，如协议方案、主机名、端口号等。
+
+## Stream
+
+### [Stream States](https://datatracker.ietf.org/doc/html/rfc7540#section-5.1)
+
+![Figure 7.2 HTTP/2 stream state diagram](https://drek4537l1klr.cloudfront.net/pollard/Figures/fig7_2_alt.jpg)
+
+### [Flow Control](https://datatracker.ietf.org/doc/html/rfc7540#section-5.2)
+
+HTTP/2 流量控制通过 WINDOW_UPDATE 帧管理发送方可发送的数据量，防止接收方缓冲区溢出。流量控制在**连接级别**和**流级别**同时生效。
+
+**核心特点**
+
+- **逐跳控制**：仅在相邻节点间生效，中间节点不转发 WINDOW_UPDATE 帧。
+- **基于信用**：接收方通过 WINDOW_UPDATE 帧告知发送方可发送的字节数。
+- **接收方主导**：接收方设置窗口大小，发送方必须遵守。
+- **初始窗口 65535 字节**：可通过 SETTINGS_INITIAL_WINDOW_SIZE 修改。
+- **仅 DATA 帧受限**：其他帧类型不占用流量控制窗口。
+- **不可禁用**。
+- **算法灵活**：HTTP/2 只定义帧格式和语义，具体算法由实现决定。
+
+**适用场景**
+
+- **保护资源受限端点**：如代理服务器需在多连接间共享内存，或上下游连接速度不匹配。
+- **防止接收方过载**：接收方无法及时处理数据时，通过流量控制限制发送方的发送速率。
+
+**最佳实践**
+
+- **充足资源时禁用**：可设置最大窗口大小 (2^31-1)，并在收到数据时立即发送 WINDOW_UPDATE 帧。
+- **资源受限时启用**：控制对端内存消耗，但可能导致网络资源利用不佳。
+- **及时读取 TCP 缓冲区**：避免死锁，尤其在使用流量控制时。
+
+**实现考量**
+
+- 实现需考虑优先级、队头阻塞、新流创建等因素，这些都会与流量控制算法相互影响。
+- 具体算法选择取决于实现需求。
+
+### [Stream Priority](https://datatracker.ietf.org/doc/html/rfc7540#section-5.3)
+
+HTTP/2 通过流依赖和权重来表达优先级，用于指导端点在资源有限时如何分配资源和调度传输。
+
+**设置优先级**
+
+- 新建流：在 HEADERS 帧中包含优先级信息。
+- 现有流：使用 PRIORITY 帧修改优先级。
+
+**优先级表示**
+
+- Stream Dependency (流依赖):
+
+  流可以依赖于另一个流，
+
+  表示优先处理被依赖的流。
+
+  - Exclusive Dependency: 新流成为父流的唯一依赖，原有依赖转为新流的依赖。
+
+- **Weight (权重):** 同一父流下的子流分配权重 (1-256)，权重越高，分配的资源越多。
+
+**优先级规则**
+
+- 优先级仅为建议，不保证处理或传输顺序。
+- 可省略优先级信息，使用默认优先级。
+- 依赖流仅在所有祖先流关闭或无法进展时才分配资源。
+- 流不能依赖自己，否则视为 PROTOCOL_ERROR。
+- 默认情况下，所有流非独占依赖于 0 号流，推送流依赖于关联流，默认权重为 16。
+
+**优先级管理**
+
+- 流关闭时，其依赖可转移到其父流。
+- 关闭流导致优先级信息丢失，资源在同级流间重新分配。
+- 应保留已关闭流的优先级状态一段时间，避免新流被分配错误优先级。
+- 空闲流可被赋予优先级或成为父流。
+- 可限制保留的优先级状态数量，高负载时可丢弃部分状态。
+
+## HTTP Message Exchanges
+
+### [HTTP Request/Response Exchange](https://datatracker.ietf.org/doc/html/rfc7540#section-8.1)
+
+HTTP/2 使用流 (stream) 来发送请求和接收响应。
+
+**HTTP 消息结构**
+
+1. 仅响应：0个或多个 HEADERS 帧（后跟 CONTINUATION 帧）包含 1xx 响应头。
+2. 1个 HEADERS 帧（后跟 CONTINUATION 帧）包含消息头。
+3. 0个或多个 DATA 帧包含消息体。
+4. 可选的1个 HEADERS 帧（后跟 CONTINUATION 帧）包含尾部 (trailer-part)。
+
+最后一帧带有 END_STREAM 标志。
+
+### [Server Push](https://datatracker.ietf.org/doc/html/rfc7540#section-8.2)
+
+HTTP/2 允许服务器在客户端请求之前主动推送资源，从而减少延迟。
+
+**工作流程**
+
+1. 服务器在某个流上发送 PUSH_PROMISE 帧，通知客户端将要推送的资源。
+2. 客户端可以选择接受或拒绝推送。
+3. 如果接受，服务器在新的流上发送推送的响应。
+
+**PUSH_PROMISE 帧**
+
+- 包含 Promised Stream ID（预留的流 ID）和请求头信息。
+- 必须在客户端发起的流上发送。
+- 必须包含安全且可缓存的方法 (safe and cacheable method)。
+
+**推送的响应**
+
+- 必须是针对客户端显式请求的。
+- 在服务器发起的流上发送。
+- 客户端可以拒绝接收，发送 RST_STREAM 帧。
+
+**其他**
+
+- 客户端可通过 SETTINGS_MAX_CONCURRENT_STREAMS 限制推送的并发数。
+- 客户端必须验证服务器的权威性或代理的配置。
+- 服务器推送不能用于非幂等操作。
+- 服务器推送的响应不能被缓存。
+
+## HTTP/2 CONNECT
+
+HTTP/2 CONNECT 方法主要用于以下场景：
+
+1. **通过 HTTP 代理建立 TLS 隧道 (HTTPS 代理)**：
+   - 客户端通过 CONNECT 方法向代理服务器请求建立到目标服务器的 TCP 隧道。
+   - 代理服务器与目标服务器建立 TLS 连接，并将后续的通信数据在隧道中透明传输。
+   - 客户端和目标服务器之间建立安全的 HTTPS 连接，实现加密通信。
+2. **访问不支持 HTTP/2 的服务器**：
+   - 某些旧版服务器可能不支持 HTTP/2，但支持 HTTP/1.1。
+   - 客户端可以通过 CONNECT 方法与代理服务器建立 HTTP/2 连接，然后通过代理服务器使用 HTTP/1.1 协议与目标服务器通信。
+3. **实现自定义协议**：
+   - 开发者可以利用 CONNECT 方法在 HTTP/2 连接上实现自定义的应用层协议。
+   - 客户端和服务器可以通过 DATA 帧在 CONNECT 流上传输自定义协议的数据。
+4. **WebSocket 隧道**：
+   - 在不支持 WebSocket 协议的网络环境中，可以使用 CONNECT 方法通过 HTTP/2 代理建立 WebSocket 隧道。
+
+**需要注意的是：**
+
+- HTTP/2 CONNECT 方法仅适用于单个流 (stream)，无法实现 HTTP/1.1 CONNECT 方法那样的多路复用。
+- 在 CONNECT 方法建立的隧道中，只能传输 DATA 帧和流管理帧 (RST_STREAM, WINDOW_UPDATE, PRIORITY)，其他类型的帧会被视为错误。
+- 由于 HTTP/2 在实际应用中通常与 TLS 结合使用 (h2)，因此通过 CONNECT 方法建立的隧道通常也是加密的。
 
 ## HTTP/2 的优化
 
@@ -270,36 +623,11 @@ HTTP/1.1 的优化方法在 HTTP/2 中成为反模式的问题：
 7. **优化 HTTPS**：这涉及到选择合适的加密算法、优化 TLS 握手、使用 HTTP/2 等。
 8. **非 HTTP 相关的 Web 性能技术**：这涉及到优化 JavaScript、CSS 和 HTML，使用 WebAssembly，优化 DOM 操作等。
 
-## Stream
-
-### [Stream States](https://datatracker.ietf.org/doc/html/rfc7540#section-5.1)
-
-![Figure 7.2 HTTP/2 stream state diagram](https://drek4537l1klr.cloudfront.net/pollard/Figures/fig7_2_alt.jpg)
-
-### [Flow Control](https://datatracker.ietf.org/doc/html/rfc7540#section-5.2)
-
-HTTP/2 的流量控制（Flow Control）用于防止多路复用的流在 TCP 连接上产生竞争，从而导致流被阻塞。流量控制确保同一连接上的流不会相互干扰。流量控制既用于单个流，也用于整个连接。
-
-1.  **连接特定性**：流量控制仅适用于单个 HTTP/2 连接的端点之间，而不是整个端到端路径。
-2.  **基于 WINDOW_UPDATE 帧**：接收方通过发送 WINDOW_UPDATE 帧告知发送方其准备接收的数据量。这是一种基于信用的流量控制机制。
-3.  **接收方主导**：流量控制的方向是由接收方控制的。接收方可以为每个流和整个连接设置任意窗口大小。发送方必须遵守接收方设置的流量控制限制。客户端、服务器和中间代理都可以独立地通告自己的流量控制窗口，并在发送数据时遵守对方设置的限制。
-4.  **初始窗口大小**：新流和整个连接的流量控制窗口初始值均为 65,535 字节。
-5.  **仅 DATA 帧受限**：只有 DATA 帧受流量控制限制。其他类型的帧（如 HEADERS、SETTINGS、PING 等）不占用流量控制窗口，以确保重要的控制帧不会被阻塞。
-6.  **不可禁用**：HTTP/2 流量控制始终启用，无法禁用。
-7.  **算法灵活性**：HTTP/2 仅定义了 WINDOW_UPDATE 帧的格式和语义，并未规定接收方何时发送该帧或发送何值，也未指定发送方如何发送数据包。这使得实现可以灵活选择适合其需求的流量控制算法。
-
-实现还需要负责管理如何根据优先级发送请求和响应，如何避免队头阻塞，以及如何创建新流。这些算法的选择可能会与流量控制算法相互影响。
-
-### [Stream Priority](https://datatracker.ietf.org/doc/html/rfc7540#section-5.3)
-
-### [Error Handling](https://datatracker.ietf.org/doc/html/rfc7540#section-5.4)
-
-## HTTP Message Exchanges
-
 ## 参考和引用
 
 - [HTTP/2 in Action](https://github.com/tunetheweb/http2-in-action)
 - [Hypertext Transfer Protocol Version 2 (HTTP/2)](https://datatracker.ietf.org/doc/html/rfc7540)
+- [HPACK: Header Compression for HTTP/2](https://datatracker.ietf.org/doc/html/rfc7541)
 - https://www.netcraft.com/blog/january-2024-web-server-survey/
 - https://github.com/nghttp2/nghttp2
 - https://httparchive.org/reports/state-of-the-web

@@ -14,7 +14,7 @@ COPY dhparam.pem /etc/nginx/ssl/dhparam.pem
 COPY ca.crt /etc/nginx/ssl/ca.crt
 
 # 创建一个简单的 index.html 文件
-RUN echo "Hello, This is for https!" > /usr/share/nginx/html/index.html
+# RUN echo "Hello, This is for https!" > /usr/share/nginx/html/index.html
 
 # 将我们的 start.sh 文件复制到容器中并设置执行权限
 COPY start.sh /start.sh
