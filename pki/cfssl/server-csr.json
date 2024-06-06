@@ -13,7 +13,9 @@
     {
       "C": "CN",
       "L": "Beijing",
-      "ST": "Beijing"
+      "O": "My Company Name",
+      "ST": "Beijing",
+      "OU": "OrgUnit"
     }
   ]
 }
