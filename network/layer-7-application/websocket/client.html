@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>WebSocket Chat Room</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link
+      rel="stylesheet"
+      href="./node_modules/bootstrap/dist/css/bootstrap.min.css"
+    />
+    <script src="./node_modules/jquery/dist/jquery.min.js"></script>
+    <script src="./node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <h1>WebSocket Chat Room</h1>
+      <div
+        id="chat-box"
+        style="
+          height: 500px;
+          border: 1px solid #ccc;
+          padding: 10px;
+          overflow: auto;
+        "
+      ></div>
+      <form id="message-form">
+        <div class="form-group">
+          <label for="message">Message:</label>
+          <input type="text" class="form-control" id="message" />
+        </div>
+        <button type="submit" class="btn btn-primary">Send</button>
+      </form>
+    </div>
+    <script>
+      $(document).ready(function () {
+        var ws = new WebSocket("ws://localhost:8080");
+
+        ws.onopen = function () {
+          console.log("WebSocket connection opened");
+        };
+
+        ws.onmessage = function (event) {
+          if (typeof event.data === "string") {
+            console.log("Received: " + event.data);
+            $("#chat-box").append("<p>" + event.data + "</p>");
+          } else if (event.data instanceof Blob) {
+            var reader = new FileReader();
+            reader.onload = function () {
+              console.log("Received: " + this.result);
+              $("#chat-box").append("<p>" + this.result + "</p>");
+            };
+            reader.readAsText(event.data);
+          }
+          $("#chat-box").scrollTop($("#chat-box")[0].scrollHeight);
+        };
+
+        $("#message-form").submit(function (event) {
+          event.preventDefault();
+          var message = $("#message").val();
+          ws.send(message);
+          $("#message").val("");
+        });
+      });
+    </script>
+  </body>
+</html>

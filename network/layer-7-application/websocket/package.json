@@ -1,0 +1,18 @@
+{
+  "name": "websocket",
+  "version": "1.0.0",
+  "description": "- [WebSocket: Lightweight Client-Server Communications](https://github.com/kinabalu/websocketsbook) - https://github.com/facundofarias/awesome-websockets - https://datatracker.ietf.org/doc/html/rfc6455",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bootstrap": "^5.3.3",
+    "jquery": "^3.7.1",
+    "uuid": "^9.0.1",
+    "ws": "^8.17.0"
+  }
+}
