@@ -1,0 +1,9 @@
+body {
+  background-color: lightblue;
+}
+
+h1 {
+  color: darkblue;
+  user-select: none;
+  /* 这个属性会被自动添加前缀 */
+}

@@ -1,0 +1,36 @@
+{
+  "name": "ex-02-css",
+  "version": "1.0.0",
+  "description": "- **less**: LESS 是一种动态样式表语言，提供变量、嵌套规则、混合等功能，使 CSS 更加易于维护和扩展。 - **sass**: Sass 是一种成熟的、稳定的、强大的 CSS 扩展语言，提供嵌套规则、变量、混合、继承等功能。 - **stylus**: Stylus 是一种富有表现力、动态的、健壮的 CSS 预处理器语言，提供类似 LESS 和 Sass 的功能。",
+  "main": "postcss.config.js",
+  "scripts": {
+    "build:dev": "webpack --config webpack.dev.js",
+    "build:prod": "webpack --config webpack.prod.js",
+    "start": "webpack serve --config webpack.dev.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "autoprefixer": "^10.4.19",
+    "clean-webpack-plugin": "^4.0.0",
+    "css-loader": "^7.1.2",
+    "cssnano": "^7.0.4",
+    "html-webpack-plugin": "^5.6.0",
+    "less": "^4.2.0",
+    "less-loader": "^12.2.0",
+    "mini-css-extract-plugin": "^2.9.0",
+    "postcss": "^8.4.39",
+    "postcss-cli": "^11.0.0",
+    "postcss-loader": "^8.1.1",
+    "postcss-preset-env": "^9.5.15",
+    "sass": "^1.77.6",
+    "sass-loader": "^14.2.1",
+    "style-loader": "^4.0.0",
+    "stylus": "^0.63.0",
+    "stylus-loader": "^8.1.0",
+    "webpack": "^5.92.1",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^5.0.4"
+  }
+}

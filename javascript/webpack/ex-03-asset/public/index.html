@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= htmlWebpackPlugin.options.title %></title>
+  </head>
+  <body>
+    <h1>Hello, Webpack!</h1>
+    <p class="text"></p>
+    <style>
+      @font-face {
+        font-family: "ExampleFont";
+        src: url("./src/fonts/font.woff2") format("woff2");
+      }
+      body {
+        font-family: "ExampleFont", sans-serif;
+      }
+    </style>
+  </body>
+</html>
