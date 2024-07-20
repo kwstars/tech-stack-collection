@@ -1,6 +1,0 @@
-{
-  // "presets" 配置Babel使用的预设
-  "presets": [
-    "@babel/preset-env" // 使用@babel/preset-env预设来转换ES6+代码
-  ]
-}
