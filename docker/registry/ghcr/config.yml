@@ -7,10 +7,10 @@ storage:
   maintenance:
     uploadpurging:
       enabled: true
-      age: 168h
+      age: 720h
       dryrun: false
       interval: 1m
 http:
   addr: 0.0.0.0:5000
 proxy:
-  remoteurl: https://registry-1.docker.io
+  remoteurl: https://ghcr.io

@@ -1,0 +1,13 @@
+{
+  "data-root": "/data/docker",
+  "registry-mirrors": [
+    "http://10.0.0.10:5000"
+  ],
+  "insecure-registries": [
+    "gcr.example.com",
+    "quay.example.com",
+    "registryk8s.example.com",
+    "ghcr.example.com",
+    "k8sgcr.example.com"
+  ]
+}
