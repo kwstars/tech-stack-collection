@@ -1,0 +1,72 @@
+services:
+  client:
+    container_name: client
+    build:
+      context: .
+      dockerfile: greeter_client/Dockerfile
+    depends_on:
+      nginx:
+        condition: service_healthy
+
+  server1:
+    container_name: server1
+    build:
+      context: .
+      dockerfile: greeter_server/Dockerfile
+    environment:
+      - SERVER_ID=server1
+    ports:
+      - 50051:50051
+    volumes:
+      - ./pcap:/pcap
+    healthcheck:
+      test: ["CMD-SHELL", "netstat -tuln | grep -q :50051 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  server2:
+    container_name: server2
+    build:
+      context: .
+      dockerfile: greeter_server/Dockerfile
+    environment:
+      - SERVER_ID=server2
+    ports:
+      - 50052:50051
+    volumes:
+      - ./pcap:/pcap
+    healthcheck:
+      test: ["CMD-SHELL", "netstat -tuln | grep -q :50051 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  nginx:
+    container_name: nginx
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
+    volumes:
+      - ./nginx/grpc_proxy.conf:/etc/nginx/conf.d/grpc_proxy.conf:ro
+      - ./pcap:/pcap
+    ports:
+      - "18080:8080"
+    depends_on:
+      server1:
+        condition: service_healthy
+      server2:
+        condition: service_healthy
+    healthcheck:
+      test:
+        ["CMD-SHELL", "timeout 2 bash -c '</dev/tcp/127.0.0.1/8080' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+networks:
+  grpc-net:
+    driver: bridge
