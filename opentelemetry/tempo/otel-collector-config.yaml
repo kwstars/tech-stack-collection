@@ -1,0 +1,55 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+
+exporters:
+  otlp:
+    endpoint: "tempo:4317" # 假设 Tempo 运行在同一 Docker 网络中的 "tempo" 服务上
+    tls:
+      insecure: true
+  debug:
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+  pprof:
+    endpoint: 0.0.0.0:1777
+  zpages:
+    endpoint: 0.0.0.0:55679
+
+# service:
+#   extensions: [pprof, zpages, health_check]
+#   pipelines:
+#     traces:
+#       receivers: [otlp]
+#       processors: [batch]
+#       exporters: [debug, zipkin, otlp]
+#     metrics:
+#       receivers: [otlp]
+#       processors: [batch]
+#       exporters: [debug, prometheus]
+
+service:
+  extensions: [health_check, pprof, zpages]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp, debug]
+    # metrics:
+    #   receivers: [otlp]
+    #   processors: [batch]
+    #   exporters: [logging]
+    # logs:
+    #   receivers: [otlp]
+    #   processors: [batch]
+    #   exporters: [logging]
